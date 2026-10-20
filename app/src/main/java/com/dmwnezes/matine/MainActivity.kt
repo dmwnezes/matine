@@ -28,7 +28,7 @@ import android.widget.FrameLayout
 class MainActivity : Activity() {
 
     companion object {
-        const val SITE = "https://dmwnezes.github.io/matine/"
+        const val SITE = "https://dmwnezes.com/matine/"
 
         /** Só abre aqui dentro links do próprio site; o resto vai para o navegador. */
         fun ehDoSite(url: String?) = url != null && url.startsWith(SITE.trimEnd('/'))

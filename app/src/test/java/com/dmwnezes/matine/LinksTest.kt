@@ -7,10 +7,10 @@ import org.junit.Test
 class LinksTest {
     @Test
     fun soLinksDoSiteFicamNoApp() {
-        assertTrue(MainActivity.ehDoSite("https://dmwnezes.github.io/matine/#ABC234"))
-        assertTrue(MainActivity.ehDoSite("https://dmwnezes.github.io/matine"))
-        assertFalse(MainActivity.ehDoSite("https://dmwnezes.github.io/estante/sala/"))
-        assertFalse(MainActivity.ehDoSite("https://evil.com/?https://dmwnezes.github.io/matine/"))
+        assertTrue(MainActivity.ehDoSite("https://dmwnezes.com/matine/#ABC234"))
+        assertTrue(MainActivity.ehDoSite("https://dmwnezes.com/matine"))
+        assertFalse(MainActivity.ehDoSite("https://dmwnezes.com/estante/sala/"))
+        assertFalse(MainActivity.ehDoSite("https://evil.com/?https://dmwnezes.com/matine/"))
         assertFalse(MainActivity.ehDoSite(null))
     }
 }

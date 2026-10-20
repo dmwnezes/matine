@@ -2,7 +2,7 @@
 
 Assistir filmes juntos, cada um no seu aparelho, no mesmo segundo. Uma pessoa cola o link de um vídeo, abre a sala e manda o convite; quem abrir o link (no Android, no iPhone ou no computador) assiste sincronizado, com chat, reações e lista de quem está na sala. Todo mundo pode dar play, pausar e pular.
 
-- **Site:** https://dmwnezes.github.io/matine/
+- **Site:** https://dmwnezes.com/matine/
 - **App Android:** https://github.com/dmwnezes/matine/releases/latest/download/Matine.apk (o mesmo site numa janela própria, com tela cheia, tela sempre acesa e "Abrir com Matinê" nos convites)
 
 ## Como funciona
@@ -27,7 +27,7 @@ Bloquear a tela ou trocar de app no celular não pausa a sala; ao voltar, o víd
 ### 1. Repositório e site
 
 1. Crie o repositório **dmwnezes/matine** (público) e envie estes arquivos.
-2. No GitHub: **Settings > Pages > Build and deployment > Deploy from a branch**, branch **main**, pasta **/ (root)**. Salve. Em um minuto o site fica em `https://dmwnezes.github.io/matine/`.
+2. No GitHub: **Settings > Pages > Build and deployment > Deploy from a branch**, branch **main**, pasta **/ (root)**. Salve. Em um minuto o site fica em `https://dmwnezes.com/matine/` (o domínio dmwnezes.com vale para todos os repositórios com Pages).
 
 O APK é gerado sozinho pelo GitHub Actions a cada mudança na pasta `app/` e aparece em **Releases**.
 
@@ -49,7 +49,7 @@ Abra o site, escreva seu nome, cole o link de um vídeo e toque em **Abrir sala*
 
 1. Em [console.cloud.google.com](https://console.cloud.google.com), escolha o projeto **matine** (o Firebase criou) > **APIs e serviços > Biblioteca** > **Google Drive API** > **Ativar**.
 2. **APIs e serviços > Credenciais > Criar credenciais > Chave de API**.
-3. Edite a chave: em **Restrições de aplicativo**, escolha **Sites** e adicione `https://dmwnezes.github.io/*`; em **Restrições de API**, escolha só **Google Drive API**. Salve.
+3. Edite a chave: em **Restrições de aplicativo**, escolha **Sites** e adicione `https://dmwnezes.com/*`; em **Restrições de API**, escolha só **Google Drive API**. Salve.
 4. Cole a chave em `chaveDrive` no `config.js`.
 
 ## Testar no computador
