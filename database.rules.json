@@ -1,0 +1,35 @@
+{
+  "rules": {
+    "salas": {
+      "$sala": {
+        ".read": "auth != null",
+        "info": {
+          ".write": "auth != null && (!data.exists() || data.child('dono').val() === auth.uid)",
+          ".validate": "newData.child('dono').val() === auth.uid && newData.child('link').isString() && newData.child('link').val().length <= 2000"
+        },
+        "estado": {
+          ".write": "auth != null && root.child('salas/' + $sala + '/info').exists()",
+          ".validate": "newData.hasChildren(['tocando', 'pos', 'em', 'por']) && newData.child('tocando').isBoolean() && newData.child('pos').isNumber() && newData.child('por').val() === auth.uid"
+        },
+        "pessoas": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "!newData.exists() || (newData.child('nome').isString() && newData.child('nome').val().length <= 24)"
+          }
+        },
+        "chat": {
+          "$msg": {
+            ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
+            ".validate": "newData.child('texto').isString() && newData.child('texto').val().length <= 500"
+          }
+        },
+        "reacoes": {
+          "$r": {
+            ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
+            ".validate": "newData.child('e').isString() && newData.child('e').val().length <= 8"
+          }
+        }
+      }
+    }
+  }
+}

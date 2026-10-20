@@ -1,0 +1,16 @@
+name: Testes do site
+
+on:
+  push:
+    paths: ["*.js", "test/**", ".github/workflows/testes.yml"]
+  workflow_dispatch:
+
+jobs:
+  sincronia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
