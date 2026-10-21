@@ -10,5 +10,5 @@ export const firebaseConfig = {
 // Chaves do Firebase (apiKey) e do Google Drive. Não são segredo (só funcionam no dmwnezes.com, pelas
 // restrições no Google Cloud); o alerta do GitHub sobre elas pode ser fechado como "False positive".
 // Vazias = o site pede cada uma uma vez e leva no convite.
-export const chaveFirebase = "";
-export const chaveDriveFixa = "";
+export const chaveFirebase = "AIzaSyBaOVrcCVxUwucD1kmU0edUcLeZIVNehFE";
+export const chaveDriveFixa = "AIzaSyD3dpL49NNV6T0FQSGAuOviontjGJ06b-U";
