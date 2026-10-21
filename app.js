@@ -2,12 +2,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { getAuth, signInAnonymously, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   getDatabase, ref, get, set, update, push, onValue, onChildAdded, onDisconnect,
-  query, limitToLast, serverTimestamp, connectDatabaseEmulator,
+  query, limitToLast, serverTimestamp, connectDatabaseEmulator, remove, orderByValue, endAt, limitToFirst,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 import { firebaseConfig, chaveFirebase, chaveDriveFixa } from "./config.js";
 import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo, chaveValida, lerHash, montarHash } from "./sync.js";
 import { buscarCapa } from "./capa.js";
 import { abrirVideo } from "./video.js";
+import { iniciarControles } from "./controles.js";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video");
@@ -96,7 +97,7 @@ $("salvarChave").addEventListener("click", () => {
     connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
   }
   onValue(ref(db, ".info/serverTimeOffset"), (s) => { offset = s.val() || 0; });
-  try { uid = (await signInAnonymously(auth)).user.uid; }
+  try { uid = (await signInAnonymously(auth)).user.uid; varrerSalasVazias(); }
   catch (e) {
     console.error(e);
     if (/api-key|API key/i.test(String(e.code || e.message))) {
@@ -212,6 +213,16 @@ const capaDaTroca = capaAoDigitar($("novoLink"), $("novoTitulo"), $("capaTroca")
 
 // ---------- Dentro da sala ----------
 let entrouEm = 0;
+/** Apaga salas que ficaram vazias há mais de 10 min (as regras do banco só deixam se não tiver ninguém dentro). */
+async function varrerSalasVazias() {
+  try {
+    const antigas = await get(query(ref(db, "vazias"), orderByValue(), endAt(agora() - 10 * 60 * 1000), limitToFirst(20)));
+    antigas.forEach((x) => {
+      remove(ref(db, `salas/${x.key}`)).then(() => remove(x.ref)).catch(() => remove(x.ref).catch(() => {}));
+    });
+  } catch (e) { console.warn("Matinê: limpeza de salas vazias falhou", e); }
+}
+
 async function entrarNaSala() {
   const eu = r(`pessoas/${uid}`);
   const meusDados = () => ({ nome: meuNome, foto: minhaFoto, entrou: serverTimestamp(), digitando: false });
@@ -222,8 +233,12 @@ async function entrarNaSala() {
     $("sync").className = "sync " + (on ? "ok" : "off");
     if (!on) return;
     await onDisconnect(eu).remove();
+    // Fim da sessão: quem sai marca a sala como vazia. Enquanto houver alguém dentro, a marca é apagada na hora;
+    // se ninguém ficar, a sala (com chat e tudo) é apagada 10 min depois por quem abrir a Matinê.
+    await onDisconnect(ref(db, `vazias/${codigo}`)).set(serverTimestamp());
     await set(eu, meusDados());
   });
+  onValue(ref(db, `vazias/${codigo}`), (s) => { if (s.exists()) remove(s.ref).catch(() => {}); });
   entrouEm = agora();
 
   $("inicio").hidden = true;
@@ -260,7 +275,7 @@ async function carregarFilme(url) {
   const meu = (carregarFilme.vez = (carregarFilme.vez || 0) + 1);
   const aberto = await abrirVideo(video, url, (msg) => avisar(msg, "Tentar de novo", () => carregarFilme(url)));
   if (meu !== carregarFilme.vez) aberto.fechar(); // trocaram o filme enquanto este abria
-  else filmeAberto = aberto;
+  else { filmeAberto = aberto; urlDoFilme = url; verTvDisponivel(); if (naTvApp) tvLigou(); }
 }
 
 // ---------- Sincronia do vídeo ----------
@@ -269,6 +284,7 @@ async function carregarFilme(url) {
 function aplicar() {
   if (!estado || video.readyState < 1) return; // loadedmetadata chama de novo
   const alvo = esperado(estado, agora());
+  if (naTvApp) window.Matine.tvEstado(estado.tocando && !emContagem(estado, agora()), alvo); // a TV segue a sala
   // Play com contagem: todo mundo espera parado no ponto certo e começa junto quando o relógio chegar.
   if (emContagem(estado, agora())) {
     video.playbackRate = 1;
@@ -494,6 +510,8 @@ video.addEventListener("pause", () => manterTelaAcesa(false));
 video.addEventListener("ended", () => manterTelaAcesa(false));
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !video.paused) manterTelaAcesa(true); });
 
+const controles = iniciarControles(video, document.querySelector(".player"));
+
 const temPip = document.pictureInPictureEnabled || video.webkitSupportsPresentationMode?.("picture-in-picture");
 $("pip").hidden = !temPip;
 $("pip").addEventListener("click", async () => {
@@ -503,6 +521,48 @@ $("pip").addEventListener("click", async () => {
     else video.webkitSetPresentationMode("picture-in-picture"); // Safari do iPhone
   } catch { toast("A janelinha só abre com o filme carregado."); }
 });
+
+// ---------- Transmitir para a TV ----------
+// No app Android: Google Cast nativo (o celular fica mudo e vira controle; a TV segue a sala).
+// No Chrome: Remote Playback (o próprio vídeo passa a tocar na TV). No iPhone: AirPlay.
+// Só vai para a TV o arquivo original: vídeo convertido na hora (MKV, Dolby…) não dá.
+let urlDoFilme = "", naTvApp = false;
+const appTv = !!window.Matine?.transmitir && window.Matine.podeTransmitir?.();
+const convertido = () => video.src.startsWith("blob:");
+function verTvDisponivel() {
+  if (appTv) { $("cTv").hidden = false; return; }
+  if (video.remote?.watchAvailability && !convertido()) {
+    video.remote.cancelWatchAvailability?.().catch(() => {});
+    video.remote.watchAvailability((tem) => { $("cTv").hidden = !tem; }).catch(() => { $("cTv").hidden = true; });
+  }
+}
+video.addEventListener("webkitplaybacktargetavailabilitychanged", (e) => { $("cTv").hidden = e.availability !== "available"; });
+$("cTv").addEventListener("click", () => {
+  if (naTvApp) { window.Matine.pararTv(); return; } // tocar de novo no botão para de transmitir
+  if (convertido()) { toast("Esse formato não vai para a TV. Use um link de MP4."); return; }
+  if (appTv) { window.Matine.transmitir(urlDoFilme, info?.titulo || "Matinê", info?.capa?.img || "", esperado(estado, agora()), !!estado?.tocando); return; }
+  if (video.webkitShowPlaybackTargetPicker) { video.webkitShowPlaybackTargetPicker(); return; }
+  video.remote?.prompt().catch((e) => { if (e.name !== "NotAllowedError" && e.name !== "AbortError") toast("Não achei uma TV na sua rede."); });
+});
+function marcarNaTv(sim) {
+  document.body.classList.toggle("na-tv", sim);
+  $("textoTv").textContent = sim ? `Passando na TV · ${info?.titulo || ""}` : "";
+  controles.mostrar();
+}
+for (const ev of ["connect", "disconnect"]) video.remote?.addEventListener(ev, () => marcarNaTv(video.remote.state === "connected"));
+// Chamados pelo app Android
+function tvLigou() { naTvApp = true; video.muted = true; marcarNaTv(true); aplicar(); }
+window.tvLigou = tvLigou;
+window.tvDesligou = () => { naTvApp = false; video.muted = false; marcarNaTv(false); aplicar(); };
+window.tvFalhou = (msg) => { window.tvDesligou(); toast(msg || "A TV não conseguiu tocar esse vídeo."); };
+// Alguém mexeu pelo controle da TV: vale como se tivesse mexido aqui (o vídeo daqui avisa a sala).
+window.daTv = (tocando, pos) => {
+  if (Math.abs(video.currentTime - pos) > 3) video.currentTime = pos;
+  if (tocando && video.paused) video.play().catch(() => {});
+  else if (!tocando && !video.paused) video.pause();
+};
+// A TV pode escorregar alguns segundos: a cada 4 s o app confere e acerta.
+setInterval(() => { if (naTvApp && estado) window.Matine.tvEstado(estado.tocando && !emContagem(estado, agora()), esperado(estado, agora())); }, 4000);
 
 // ---------- Instalar como app (iPhone) ----------
 const noIphone = /iPhone|iPad|iPod/.test(navigator.userAgent);

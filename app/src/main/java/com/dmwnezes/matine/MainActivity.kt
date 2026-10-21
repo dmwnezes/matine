@@ -6,9 +6,11 @@ import android.app.PictureInPictureParams
 import android.content.res.Configuration
 import android.content.Intent
 import android.graphics.Color
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Rational
 import android.view.View
 import android.view.ViewGroup
@@ -26,7 +28,8 @@ import android.widget.FrameLayout
 /**
  * O app é o próprio site da Matinê numa janela: toda a sala (vídeo, sincronia, chat) vive no site.
  * Aqui só fica o que o site não consegue sozinho: tela cheia do vídeo, tela sempre acesa,
- * abrir convites no app e o menu de compartilhar do Android.
+ * abrir convites no app, o menu de compartilhar do Android, janelinha, brilho/volume dos gestos,
+ * transmitir para a TV ([Tv]) e atualizar o próprio app ([Atualizacao]).
  */
 class MainActivity : Activity() {
 
@@ -42,6 +45,9 @@ class MainActivity : Activity() {
     private var telaCheia: View? = null
     /** O site avisa quando o filme está tocando: só aí vale virar janelinha ao sair do app. */
     @Volatile private var tocando = false
+    private lateinit var tv: Tv
+    private lateinit var atualizacao: Atualizacao
+    private val audio by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,8 +68,18 @@ class MainActivity : Activity() {
         setContentView(raiz)
         respeitarBarrasETeclado()
 
+        tv = Tv(this) { codigo -> runOnUiThread { web.evaluateJavascript("window.$codigo", null) } }
+        tv.ligar()
+        atualizacao = Atualizacao(this)
+
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(enderecoDe(intent))
+        atualizacao.conferir()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        atualizacao.instalar() // voltou da tela de permissão de instalar: continua de onde parou
     }
 
     private fun enderecoDe(i: Intent?): String = i?.dataString?.takeIf(::ehDoSite) ?: SITE
@@ -105,6 +121,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        tv.desligar()
         web.destroy()
         super.onDestroy()
     }
@@ -192,6 +209,31 @@ class MainActivity : Activity() {
         fun tocando(sim: Boolean) {
             tocando = sim
             runOnUiThread { runCatching { setPictureInPictureParams(janelinha()) } }
+        }
+
+        // ---- TV ----
+        @JavascriptInterface fun podeTransmitir() = tv.disponivel
+        @JavascriptInterface
+        fun transmitir(url: String, titulo: String, capa: String, pos: Double, tocando: Boolean) =
+            runOnUiThread { tv.transmitir(url, titulo, capa, pos, tocando) }
+        @JavascriptInterface fun tvEstado(tocando: Boolean, pos: Double) = runOnUiThread { tv.estado(tocando, pos) }
+        @JavascriptInterface fun pararTv() = runOnUiThread { tv.parar() }
+
+        // ---- Gestos do player: brilho da tela e volume (da TV, se estiver transmitindo) ----
+        @JavascriptInterface
+        fun brilhoAtual(): Float = window.attributes.screenBrightness.takeIf { it >= 0 }
+            ?: (Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS, 128) / 255f)
+        @JavascriptInterface
+        fun brilho(v: Float) = runOnUiThread { window.attributes = window.attributes.apply { screenBrightness = v.coerceIn(0.05f, 1f) } }
+        @JavascriptInterface
+        fun volumeAtual(): Float = tv.volumeAtual?.toFloat()
+            ?: (audio.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC))
+        @JavascriptInterface
+        fun volume(v: Float) = runOnUiThread {
+            if (!tv.volume(v.toDouble())) {
+                val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                audio.setStreamVolume(AudioManager.STREAM_MUSIC, Math.round(v.coerceIn(0f, 1f) * max), 0)
+            }
         }
 
         @JavascriptInterface

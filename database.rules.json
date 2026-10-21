@@ -3,6 +3,7 @@
     "salas": {
       "$sala": {
         ".read": "auth != null",
+        ".write": "auth != null && !newData.exists() && !data.child('pessoas').exists() && root.child('vazias/' + $sala).isNumber() && root.child('vazias/' + $sala).val() < now - 600000",
         "info": {
           ".write": "auth != null && (!data.exists() || data.child('dono').val() === auth.uid)",
           ".validate": "newData.child('dono').val() === auth.uid && newData.child('link').isString() && newData.child('link').val().length <= 2000"
@@ -29,6 +30,14 @@
             ".validate": "newData.child('e').isString() && newData.child('e').val().length <= 8"
           }
         }
+      }
+    },
+    "vazias": {
+      ".read": "auth != null",
+      ".indexOn": ".value",
+      "$sala": {
+        ".write": "auth != null",
+        ".validate": "newData.isNumber()"
       }
     }
   }

@@ -17,6 +17,14 @@ Quando a sala está pausada e alguém dá play, todo mundo vê uma contagem 3, 2
 
 Ao abrir a sala, a Matinê busca a capa e um resumo do filme na Wikipédia (pelo nome digitado ou pelo nome do arquivo). Se vier o filme errado, toque em "Não é esse filme". A capa aparece no convite, na sala e no vídeo antes do play. O link mandado no WhatsApp/Instagram mostra o cartão da Matinê (a capa de cada filme não aparece ali porque o site é estático, sem servidor).
 
+**Player:** toque mostra/esconde os controles; toque duplo nos lados volta/avança 10 s (cada toque a mais soma 10); toque duplo no meio dá play/pausa; deslizar na esquerda muda o brilho e na direita o volume. No computador: espaço, setas e F.
+
+**TV:** o botão de TV manda o filme para o Chromecast/Google TV (app Android e Chrome) ou Apple TV (AirPlay no iPhone). No app, o celular fica mudo e vira controle: botões e gestos mexem na sala e a TV acompanha; play/pausa feitos pelo controle da TV também valem para a sala. Só vai para a TV o arquivo original (MP4/WebM/HLS); vídeo convertido na hora não vai, e link do Drive só vai se a chave do Drive não estiver restrita a sites.
+
+**Sala que se apaga:** quando a última pessoa sai, a sala é marcada como vazia; 10 min depois ela é apagada (com chat e tudo) por quem abrir a Matinê. Voltar antes disso (ex.: recarregar a página) mantém a sala.
+
+**Atualização:** o app Android confere as Releases do GitHub ao abrir (no máximo a cada 6 h), pergunta, baixa e abre o instalador.
+
 Bloquear a tela ou trocar de app no celular não pausa a sala; ao voltar, o vídeo alcança os outros sozinho.
 
 ## Arquivos e links que funcionam

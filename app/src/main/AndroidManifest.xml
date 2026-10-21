@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Atualização dentro do app -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:label="Matinê"
@@ -31,5 +33,19 @@
                 <data android:scheme="https" android:host="dmwnezes.com" android:pathPrefix="/matine" />
             </intent-filter>
         </activity>
+
+        <!-- Entrega o APK baixado ao instalador do Android -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.arquivos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/arquivos" />
+        </provider>
+
+        <!-- Transmitir para a TV (Google Cast, receptor padrão) -->
+        <meta-data
+            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+            android:value="com.dmwnezes.matine.CastOptionsProvider" />
     </application>
 </manifest>

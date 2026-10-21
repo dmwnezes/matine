@@ -163,10 +163,40 @@
   .resposta span { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .resposta button, .dica button { width: 32px; height: 32px; flex: none; border: 0; border-radius: 50%; background: var(--card2); color: var(--muted); cursor: pointer; }
   /* Janelinha */
-  .pip { position: absolute; top: calc(8px + env(safe-area-inset-top)); right: 8px; z-index: 3; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(10,7,30,.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-  .pip svg { width: 20px; height: 20px; }
+  /* Player com controles próprios e gestos */
+  .gestos { position: absolute; inset: 0; z-index: 2; touch-action: none; -webkit-user-select: none; user-select: none; }
+  .barra-player { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 4px; padding: 18px 8px 6px; background: linear-gradient(transparent, rgba(5,3,18,.85)); opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .player.com-controles .barra-player { opacity: 1; pointer-events: auto; }
+  .player.com-controles { cursor: auto; } .player:not(.com-controles) { cursor: none; }
+  .barra-player button { width: 40px; height: 40px; flex: none; border: 0; border-radius: 50%; background: none; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .barra-player button:active { background: rgba(255,255,255,.15); }
+  .barra-player svg { width: 24px; height: 24px; }
+  #cPlay .i-pausa, #cPlay.tocando .i-play { display: none; } #cPlay.tocando .i-pausa { display: block; }
+  .tempo { color: #fff; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; padding: 0 4px; }
+  #cBarra { flex: 1; min-width: 60px; height: 28px; margin: 0 4px; -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
+  #cBarra::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--accent) var(--p, 0%), rgba(255,255,255,.3) var(--p, 0%)); }
+  #cBarra::-moz-range-track { height: 4px; border-radius: 4px; background: rgba(255,255,255,.3); }
+  #cBarra::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--accent); }
+  #cBarra::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: #fff; border: 0; }
+  #cBarra::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 0; }
+  #cBarra:focus-visible { outline: 2px solid var(--accent); border-radius: 8px; }
+  .aviso-gesto { position: absolute; top: 50%; z-index: 4; transform: translate(-50%, -50%); padding: 10px 16px; border-radius: 999px; background: rgba(10,7,30,.7); color: #fff; font-size: 18px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s; white-space: nowrap; left: 50%; }
+  .aviso-gesto.on { opacity: 1; } .aviso-gesto.esq { left: 22%; } .aviso-gesto.dir { left: 78%; }
+  .rodinha { position: absolute; left: 50%; top: 50%; z-index: 2; width: 44px; height: 44px; margin: -22px; border-radius: 50%; border: 4px solid rgba(255,255,255,.25); border-top-color: var(--accent); animation: gira .8s linear infinite; display: none; pointer-events: none; }
+  .player.carregando .rodinha { display: block; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+  .player.cheia { padding-top: 0; }
+  /* Passando na TV: o vídeo daqui some e os controles ficam sempre à mostra, maiores */
+  .na-tv-aviso { position: absolute; inset: 0; z-index: 1; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px 16px 70px; text-align: center; color: #fff; background: radial-gradient(circle at 50% 40%, #2F275C, #120E2B); pointer-events: none; }
+  .na-tv-aviso svg { width: 54px; height: 54px; color: var(--accent); }
+  .na-tv-aviso span { font-weight: 600; font-size: 16px; } .na-tv-aviso small { color: var(--muted); font-size: 12px; }
+  body.na-tv .na-tv-aviso { display: flex; }
+  body.na-tv video { opacity: 0; }
+  body.na-tv .barra-player { opacity: 1; pointer-events: auto; background: none; }
+  body.na-tv .barra-player button { width: 48px; height: 48px; }
+  body.na-tv #cTv { color: var(--accent); }
   /* App Android em janelinha: só o filme */
-  body.pip .side, body.pip .pip { display: none !important; }
+  body.pip .side, body.pip .barra-player { display: none !important; }
   body.pip .player { width: 100vw; height: 100vh; aspect-ratio: auto; padding: 0; }
   .dica { display: flex; align-items: center; gap: 10px; max-width: 340px; padding: 10px 10px 10px 14px; border-radius: 18px; background: var(--card); color: var(--muted); font-size: 13px; text-align: left; }
   .capa { display: flex; gap: 12px; align-items: flex-start; width: 100%; max-width: 340px; padding: 10px; border-radius: 20px; background: var(--card); text-align: left; }
@@ -212,8 +242,19 @@
 
 <section id="sala">
   <div class="player">
-    <video id="video" playsinline controls preload="auto" autopictureinpicture></video>
-    <button id="pip" class="pip" type="button" aria-label="Janelinha flutuante" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7h-8v6h8V7Zm2-4H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 16H3V5h18v14Z"/></svg></button>
+    <video id="video" playsinline preload="auto" autopictureinpicture></video>
+    <div class="gestos" id="cGestos" aria-hidden="true"></div>
+    <div class="aviso-gesto" id="cAviso" aria-live="polite"></div>
+    <div class="rodinha" aria-hidden="true"></div>
+    <div class="na-tv-aviso" aria-live="polite"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5v2h8v-2h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 14H3V5h18v12Z"/></svg><span id="textoTv"></span><small>O celular virou controle: use os botões e os gestos aqui. Para parar, toque no botão da TV.</small></div>
+    <div class="barra-player" id="cBarraPlayer">
+      <button id="cPlay" type="button" aria-label="Tocar"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg><svg class="i-pausa" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+      <input type="range" id="cBarra" min="0" max="1000" value="0" step="1" aria-label="Posição do filme">
+      <span id="cTempo" class="tempo">0:00 / --:--</span>
+      <button id="cTv" type="button" aria-label="Transmitir para a TV" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3a2 2 0 0 0-2 2v3h2V5h18v14h-7v2h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM1 18v3h3a3 3 0 0 0-3-3Zm0-4v2a5 5 0 0 1 5 5h2a7 7 0 0 0-7-7Zm0-4v2a9 9 0 0 1 9 9h2A11 11 0 0 0 1 10Z"/></svg></button>
+      <button id="pip" type="button" aria-label="Janelinha flutuante" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7h-8v6h8V7Zm2-4H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 16H3V5h18v14Z"/></svg></button>
+      <button id="cTela" type="button" aria-label="Tela cheia"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM6 15v3h3v2H4v-5h2Zm12 3v-3h2v5h-5v-2h3Z"/></svg></button>
+    </div>
     <div class="overlay" id="aviso"></div>
     <div id="flutuantes"></div>
     <div id="contagem" aria-live="assertive"><b id="numeroContagem">3</b><span id="textoContagem">Começando junto…</span></div>
