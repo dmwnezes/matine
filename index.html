@@ -171,6 +171,11 @@
   <p class="sub" id="textoInicio">Carregando…</p>
   <div class="capa" id="capaConvite" hidden></div>
   <span class="pic" id="minhaFoto" aria-hidden="true"></span>
+  <div class="filme" id="campoChave" hidden>
+    <input type="text" id="chave" placeholder="Chave do Firebase (AIza…)" aria-label="Chave do Firebase" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="sub" style="font-size:13px">Está no console do Firebase: Configurações do projeto › Seus apps › <b>apiKey</b>.</p>
+    <button class="btn" id="salvarChave" type="button">Salvar chave</button>
+  </div>
   <input type="text" id="nome" placeholder="Seu nome" maxlength="24" autocomplete="nickname" aria-label="Seu nome">
   <p class="sub">Escolha sua foto</p>
   <div class="picks" id="fotos" role="group" aria-label="Fotos de perfil"></div>

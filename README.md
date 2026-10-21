@@ -53,7 +53,8 @@ O APK é gerado sozinho pelo GitHub Actions a cada mudança na pasta `app/` e ap
 2. **Criação > Authentication > Começar > Método de login > Anônimo > Ativar**. (Cada aparelho entra com um usuário anônimo; ninguém precisa de conta.)
 3. **Criação > Realtime Database > Criar banco de dados** > local **Estados Unidos** > **modo bloqueado**.
 4. Na aba **Regras**, apague tudo, cole o conteúdo do arquivo [`database.rules.json`](database.rules.json) e toque em **Publicar**.
-5. Em **Configurações do projeto** (engrenagem) > **Seus apps** > ícone **`</>`** (Web) > apelido **matine** > **Registrar app**. Copie os valores do `firebaseConfig` que aparecem para o arquivo [`config.js`](config.js) e envie para o GitHub.
+5. Em **Configurações do projeto** (engrenagem) > **Seus apps** > ícone **`</>`** (Web) > apelido **matine** > **Registrar app**. Copie os valores do `firebaseConfig` que aparecem para o arquivo [`config.js`](config.js), **menos a `apiKey`**, e envie para o GitHub.
+6. Abra o site uma vez e cole a `apiKey` quando ele pedir. Ela fica guardada no aparelho e vai junto em todo convite (`#CODIGO~CHAVE`), então quem entra por convite não digita nada. Assim a chave nunca fica no repositório e o GitHub não acusa chave exposta.
 
 Esses valores não são segredo (todo site com Firebase mostra os seus). Quem protege as salas são as regras: só entra quem tem o código da sala, ninguém consegue listar as salas, só o dono troca o filme e cada um só escreve o próprio nome e as próprias mensagens.
 

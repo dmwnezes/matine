@@ -1,7 +1,7 @@
 // Preencha uma vez com os dados do seu projeto do Firebase (veja o README, passo 2).
+// A chave (apiKey) não fica aqui: é colocada uma vez no próprio site e vai junto nos convites.
 // Esses dados não são segredo: quem protege a sala são as regras do banco (database.rules.json).
 export const firebaseConfig = {
-  apiKey: "AIzaSyBaOVrcCVxUwucD1kmU0edUcLeZIVNehFE",
   authDomain: "matine-d6bcc.firebaseapp.com",
   databaseURL: "https://matine-d6bcc-default-rtdb.firebaseio.com",
   projectId: "matine-d6bcc",

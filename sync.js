@@ -73,6 +73,19 @@ export function novoCodigo(aleatorio = Math.random) {
 
 export const codigoValido = (c) => /^[A-HJ-NP-Z2-9]{6}$/.test(c);
 
+/** Chave da Web do Firebase (sempre "AIza" + 35 letras/números/-/_). */
+export const chaveValida = (k) => /^AIza[0-9A-Za-z_-]{35}$/.test(k || "");
+
+/**
+ * Link da sala: "#CODIGO~CHAVE". A chave vai junto no convite para quem entra não precisar digitar nada
+ * (como na Estante, que levava o banco no link). A chave não é segredo: só funciona no dmwnezes.com.
+ */
+export function lerHash(hash) {
+  const [c = "", k = ""] = decodeURIComponent(String(hash).replace(/^#/, "")).trim().split("~");
+  return { codigo: c.toUpperCase(), chave: chaveValida(k) ? k : "" };
+}
+export const montarHash = (codigo, chave) => "#" + codigo + (chave ? "~" + chave : "");
+
 /** Nome de arquivo vira título para buscar a capa: "Interstellar.2014.1080p.BluRay.x264" → "Interstellar". */
 export function limparTitulo(nome) {
   let t = String(nome).replace(/\.[a-z0-9]{2,4}$/i, "").replace(/[._]+/g, " ");

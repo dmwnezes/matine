@@ -5,7 +5,7 @@ import {
   query, limitToLast, serverTimestamp, connectDatabaseEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 import { firebaseConfig, chaveDrive } from "./config.js";
-import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo } from "./sync.js";
+import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo, chaveValida, lerHash, montarHash } from "./sync.js";
 import { buscarCapa } from "./capa.js";
 import { abrirVideo } from "./video.js";
 
@@ -49,25 +49,53 @@ if (!firebaseConfig.databaseURL) {
   $("textoInicio").textContent = "Falta configurar o Firebase no config.js (veja o README).";
   throw new Error("config.js vazio");
 }
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
-// Rodando no próprio computador (npm run teste-sala): usa o Firebase de mentira, nunca o de verdade.
-if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-  connectDatabaseEmulator(db, "127.0.0.1", 9000);
-  connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
-}
-let offset = 0;
-onValue(ref(db, ".info/serverTimeOffset"), (s) => { offset = s.val() || 0; });
-const agora = () => Date.now() + offset;
+// Rodando no próprio computador (testes): usa o Firebase de mentira, nunca o de verdade.
+const local = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+const doLink = lerHash(location.hash);
+// A chave vem do convite ou fica guardada neste aparelho depois da primeira vez.
+let chave = local ? "teste" : doLink.chave || guardado("matine-chave");
+if (doLink.chave) guardar("matine-chave", doLink.chave);
 
-let codigo = decodeURIComponent(location.hash.slice(1)).toUpperCase().trim();
+let db, auth, offset = 0;
+const agora = () => Date.now() + offset;
+let codigo = doLink.codigo;
 let uid = null, info = null, estado = null;
 const r = (p) => ref(db, `salas/${codigo}/${p}`);
 
+/** Primeira vez neste aparelho e sem convite: pede a chave uma vez só. */
+function pedirChave(erro) {
+  $("textoInicio").textContent = "Primeira vez aqui: cole a chave do Firebase. É só desta vez — depois ela vai junto nos convites.";
+  $("campoChave").hidden = false;
+  $("erroInicio").textContent = erro || "";
+  $("entrar").hidden = true;
+  $("chave").focus();
+}
+$("salvarChave").addEventListener("click", () => {
+  const k = $("chave").value.trim();
+  if (!chaveValida(k)) { $("erroInicio").textContent = "Essa chave não parece certa. Ela começa com AIza e tem 39 caracteres."; return; }
+  guardar("matine-chave", k);
+  location.reload();
+});
+
 (async function inicio() {
+  if (!chaveValida(chave) && !local) { pedirChave(); return; }
+  const app = initializeApp({ ...firebaseConfig, apiKey: chave });
+  db = getDatabase(app);
+  auth = getAuth(app);
+  if (local) {
+    connectDatabaseEmulator(db, "127.0.0.1", 9000);
+    connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+  }
+  onValue(ref(db, ".info/serverTimeOffset"), (s) => { offset = s.val() || 0; });
   try { uid = (await signInAnonymously(auth)).user.uid; }
-  catch (e) { $("textoInicio").textContent = "Não consegui entrar no Firebase. Confira o login anônimo (README, passo 2)."; console.error(e); return; }
+  catch (e) {
+    console.error(e);
+    if (/api-key|API key/i.test(String(e.code || e.message))) {
+      try { localStorage.removeItem("matine-chave"); } catch {}
+      pedirChave("Essa chave não funcionou. Confira e cole de novo.");
+    } else $("textoInicio").textContent = "Não consegui entrar no Firebase. Confira a internet e tente de novo.";
+    return;
+  }
 
   if (codigoValido(codigo)) {
     const snap = await get(r("info")).catch(() => null);
@@ -116,7 +144,7 @@ async function criarSala(link, titulo, capa) {
     } catch (e) { if (tentativa === 4) throw new Error("Não consegui criar a sala. Confira as regras do banco (README)."); }
   }
   await set(r("estado"), { tocando: false, pos: 0, em: serverTimestamp(), por: uid });
-  history.replaceState(null, "", "#" + codigo);
+  history.replaceState(null, "", montarHash(codigo, local ? "" : chave));
   info = (await get(r("info"))).val();
 }
 function nomeDoArquivo(link) {
@@ -416,7 +444,7 @@ $("mini").addEventListener("click", () => { $("codigoFolha").textContent = codig
 $("fechar").addEventListener("click", () => $("folha").classList.remove("show"));
 $("folha").addEventListener("click", (e) => { if (e.target.id === "folha") $("folha").classList.remove("show"); });
 $("convidar").addEventListener("click", async () => {
-  const link = `${location.origin}${location.pathname}#${codigo}`;
+  const link = `${location.origin}${location.pathname}${montarHash(codigo, local ? "" : chave)}`;
   const texto = `Vem assistir ${info?.titulo || "um filme"} comigo na Matinê: ${link}`;
   if (window.Matine?.compartilhar) { window.Matine.compartilhar(texto); return; } // app Android
   if (navigator.share) { try { await navigator.share({ text: texto }); return; } catch (e) { if (e.name === "AbortError") return; } }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo } from "../sync.js";
+import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo, lerHash, montarHash } from "../sync.js";
 
 test("posição esperada anda com o relógio só quando está tocando", () => {
   assert.equal(esperado({ tocando: true, pos: 10, em: 1000 }, 4000), 13);
@@ -57,4 +57,13 @@ test("título limpo a partir do nome do arquivo", () => {
   assert.equal(limparTitulo("Cidade_de_Deus_DUBLADO.mp4"), "Cidade de Deus");
   assert.equal(limparTitulo("Divertida Mente 2 (2024) [WEB-DL].mp4"), "Divertida Mente 2");
   assert.equal(limparTitulo("filme"), "filme");
+});
+
+test("link da sala leva o código e a chave", () => {
+  const k = "AIza" + "x".repeat(35);
+  assert.deepEqual(lerHash(montarHash("ABC234", k)), { codigo: "ABC234", chave: k });
+  assert.deepEqual(lerHash("#abc234"), { codigo: "ABC234", chave: "" }); // link antigo, sem chave
+  assert.deepEqual(lerHash("#ABC234~lixo"), { codigo: "ABC234", chave: "" });
+  assert.deepEqual(lerHash(""), { codigo: "", chave: "" });
+  assert.equal(montarHash("ABC234", ""), "#ABC234");
 });
