@@ -154,6 +154,50 @@
   @keyframes pop { 0% { transform: scale(1.5); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 100% { transform: scale(.92); opacity: 1 } }
   /* Capa do filme (Wikipédia) */
   .campoDrive input { width: 100%; }
+  /* Fotos no chat */
+  .botao-foto { width: 48px; height: 48px; flex: none; border-radius: 50%; background: var(--card); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .botao-foto svg { width: 22px; height: 22px; }
+  .botao-foto input { display: none; }
+  .botao-foto.ocupado { opacity: .45; pointer-events: none; animation: gira-leve 1s linear infinite; }
+  @keyframes gira-leve { 50% { opacity: .2 } }
+  .bubble.foto { padding: 4px; max-width: 72%; }
+  .bubble.foto small { padding: 2px 8px 4px; }
+  .bubble.foto img { display: block; width: 100%; max-width: 260px; max-height: 320px; object-fit: cover; border-radius: 14px; cursor: zoom-in; background: rgba(0,0,0,.2); }
+  .bubble.foto img + * , .bubble.foto > :last-child:not(img):not(small):not(.cita) { padding: 4px 8px; }
+  .visualizador { position: fixed; inset: 0; z-index: 60; background: #000; display: none; align-items: center; justify-content: center; }
+  .visualizador.show { display: flex; }
+  .visualizador img { max-width: 100%; max-height: 100%; object-fit: contain; -webkit-touch-callout: default; }
+  .visualizador button { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 12px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255,255,255,.15); color: #fff; font-size: 20px; cursor: pointer; }
+  .visualizador p { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom)); left: 0; right: 0; margin: 0; text-align: center; color: rgba(255,255,255,.6); font-size: 12px; }
+  /* Efeitos dos comandos secretos */
+  #efeitos { position: fixed; inset: 0; z-index: 45; pointer-events: none; overflow: hidden; }
+  .ef-pipoca { position: absolute; top: -50px; width: 40px; height: 40px; padding: 0; border: 0; background: none; pointer-events: auto; cursor: pointer; animation: ef-cai linear forwards; }
+  .ef-pipoca svg { width: 100%; height: 100%; display: block; }
+  .ef-pipoca.estoura { animation: ef-estoura .3s ease-out forwards !important; }
+  @keyframes ef-cai { to { transform: translateY(calc(100vh + 80px)) rotate(var(--giro)); } }
+  @keyframes ef-estoura { to { transform: scale(1.8); opacity: 0; } }
+  .ef-confete { position: absolute; top: -20px; width: 8px; height: 14px; border-radius: 2px; animation: ef-confete ease-in forwards; }
+  @keyframes ef-confete { to { transform: translate(var(--x), calc(100vh + 40px)) rotate(var(--giro)); opacity: .8; } }
+  .ef-centro { position: absolute; left: 50%; top: 42%; width: 120px; height: 120px; margin: -60px; filter: drop-shadow(0 10px 24px rgba(0,0,0,.5)); animation: ef-surge .3s cubic-bezier(.3,1.5,.5,1), ef-some .4s ease-in 2.8s forwards; }
+  .ef-centro svg { width: 100%; height: 100%; display: block; }
+  .ef-dado:not(.parou) { animation: ef-surge .3s cubic-bezier(.3,1.5,.5,1), ef-chacoalha .18s linear infinite; }
+  .ef-dado.parou { animation: ef-pousa .35s cubic-bezier(.3,1.6,.5,1), ef-some .4s ease-in 1.7s forwards; }
+  @keyframes ef-surge { from { transform: scale(.3); opacity: 0; } }
+  @keyframes ef-some { to { transform: scale(.7); opacity: 0; } }
+  @keyframes ef-chacoalha { 0% { transform: rotate(-12deg) } 50% { transform: rotate(12deg) } 100% { transform: rotate(-12deg) } }
+  @keyframes ef-pousa { from { transform: scale(1.3); } }
+  .ef-moeda { perspective: 600px; }
+  .ef-moeda-gira { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; animation: ef-cara 1.6s cubic-bezier(.2,.7,.3,1) forwards; }
+  .ef-moeda-gira.coroa { animation-name: ef-coroa; }
+  .ef-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .ef-face.coroa { transform: rotateY(180deg); }
+  @keyframes ef-cara { from { transform: translateY(40px) rotateY(0); } 50% { transform: translateY(-60px) rotateY(1080deg); } to { transform: translateY(0) rotateY(1800deg); } }
+  @keyframes ef-coroa { from { transform: translateY(40px) rotateY(0); } 50% { transform: translateY(-60px) rotateY(1080deg); } to { transform: translateY(0) rotateY(1980deg); } }
+  /* /luz: apaga as luzes em volta do vídeo */
+  body.luz-apagada .side, body.luz-apagada #mini { filter: brightness(.35); transition: filter .8s; }
+  body.luz-apagada { background: #07051A; }
+  body:not(.luz-apagada) .side { transition: filter .8s; }
+  @media (prefers-reduced-motion: reduce) { .ef-pipoca, .ef-confete { animation-duration: .01s !important; } }
   /* Ajustes */
   .dialogo { position: fixed; inset: 0; z-index: 31; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(10,7,30,.72); }
   .dialogo.show { display: flex; }
@@ -361,6 +405,7 @@
       <button type="button" id="cancelarResposta" aria-label="Cancelar resposta">✕</button>
     </div>
     <form id="form" autocomplete="off">
+      <label class="botao-foto" id="botaoFoto" aria-label="Mandar foto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 12H5l3.5-4.5 2.5 3 3.5-4.5L19 17ZM8.5 10A1.5 1.5 0 1 0 8.5 7a1.5 1.5 0 0 0 0 3Z"/></svg><input type="file" id="arquivoFoto" accept="image/*"></label>
       <input type="text" id="texto" placeholder="Mensagem para a sala" maxlength="500" enterkeyhint="send" aria-label="Mensagem">
       <button id="enviar" aria-label="Enviar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z"/></svg></button>
     </form>
@@ -408,6 +453,7 @@
   </div>
 </div>
 <div id="toast" role="status"></div>
+<div id="visualizador" class="visualizador" role="dialog" aria-modal="true" aria-label="Foto"><img id="fotoGrande" alt="Foto em tamanho grande"><button id="fecharFoto" type="button" aria-label="Fechar">✕</button><p>Segure a foto para salvar</p></div>
 
 <script type="importmap">
 { "imports": { "mediabunny": "https://cdn.jsdelivr.net/npm/mediabunny@1.62.0/dist/bundles/mediabunny.min.mjs" } }

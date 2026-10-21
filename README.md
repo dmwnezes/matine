@@ -23,6 +23,10 @@ Ao abrir a sala, a Matinê busca a capa e um resumo do filme na Wikipédia (pelo
 
 **Sala que se apaga:** quando a última pessoa sai, a sala é marcada como vazia; 10 min depois ela é apagada (com chat e tudo) por quem abrir a Matinê. Voltar antes disso (ex.: recarregar a página) mantém a sala.
 
+**Fotos no chat:** o botão de imagem ao lado do campo de mensagem manda uma foto, reduzida no próprio aparelho (até ~200 KB) e guardada na sala, que é apagada junto com ela. Tocar na foto abre em tela cheia.
+
+**Comandos secretos:** `/brotos` e `/tchau`, `/carta texto`, `/pipoca`, `/confete`, `/dado`, `/moeda` e `/luz` aparecem na tela de todos da sala. Dado e moeda dão o mesmo resultado para todos.
+
 **Atualização:** o app Android confere as Releases do GitHub ao abrir (no máximo a cada 6 h), pergunta, baixa e abre o instalador.
 
 Bloquear a tela ou trocar de app no celular não pausa a sala; ao voltar, o vídeo alcança os outros sozinho.

@@ -10,6 +10,8 @@ import { buscarCapa } from "./capa.js";
 import { abrirVideo } from "./video.js";
 import { iniciarControles } from "./controles.js";
 import { iniciarBrotos, comandoBrotos } from "./brotos.js";
+import { comandoEfeito, sortearValor, valorValido, textoDoEfeito, rodarEfeito } from "./efeitos.js";
+import { fotoParaChat, fotoValida } from "./fotos.js";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video");
@@ -446,8 +448,17 @@ function mostrarMensagem(m, id) {
     if ((m.em || 0) >= entrouEm - 5000) { brotos ??= iniciarBrotos($("chat")); brotos[cmd](); } // histórico antigo não chama
     return;
   }
+  // Easter eggs de efeito (/pipoca, /confete, /dado, /moeda, /luz): viram linha no chat e efeito na tela de todos.
+  const ef = comandoEfeito(m.texto);
+  if (ef) {
+    const valor = valorValido(ef, m.valor);
+    linhaSistema(textoDoEfeito(ef, m.uid === uid ? "Você" : m.nome || "Alguém", valor));
+    if ((m.em || 0) >= entrouEm - 5000) rodarEfeito(ef, valor);
+    return;
+  }
   const carta = /^\/carta\s+([\s\S]+)/i.exec(m.texto || "");
   if (carta) { rolarSeNoFim((c) => c.appendChild(cartaIngresso(m, id, carta[1].trim().slice(0, 140)))); return; }
+  if (!m.texto && !fotoValida(m.img)) return; // nada para mostrar (ex.: foto recusada pelo banco)
   let bolhaNova = null;
   rolarSeNoFim((c) => {
     const linha = document.createElement("div");
@@ -465,7 +476,14 @@ function mostrarMensagem(m, id) {
       cita.append(quem, String(m.resp.texto).slice(0, 80));
       b.appendChild(cita);
     }
-    b.appendChild(document.createTextNode(m.texto));
+    if (fotoValida(m.img)) {
+      b.classList.add("foto");
+      const img = Object.assign(document.createElement("img"), { src: m.img, alt: "Foto de " + (m.nome || "alguém"), loading: "lazy" });
+      img.addEventListener("click", (e) => { e.stopPropagation(); abrirFoto(m.img); });
+      b.appendChild(img);
+      linha.dataset.texto = m.texto || "📷 Foto";
+    }
+    if (m.texto) b.appendChild(document.createTextNode(m.texto));
     linha.appendChild(b);
     c.appendChild(linha);
     bolhaNova = b;
@@ -546,12 +564,31 @@ $("form").addEventListener("submit", (e) => {
   e.preventDefault();
   const texto = $("texto").value.trim();
   if (!texto) return;
-  push(r("chat"), { uid, nome: meuNome, texto, resp: respondendo, cor: corBalao, em: serverTimestamp() }).catch(() => toast("A mensagem não foi."));
+  const ef = comandoEfeito(texto);
+  push(r("chat"), { uid, nome: meuNome, texto, resp: respondendo, cor: corBalao, valor: ef ? sortearValor(ef) : null, em: serverTimestamp() }).catch(() => toast("A mensagem não foi."));
   responder(null);
   $("texto").value = "";
   $("enviar").classList.remove("on");
   clearTimeout(digitandoTimer); digitandoTimer = 0; marcarDigitando(false);
 });
+
+// ---------- Fotos no chat ----------
+// A foto é reduzida no próprio aparelho (no máximo ~200 KB) e vai direto no banco da sala, que é apagado junto com ela.
+$("arquivoFoto").addEventListener("change", async () => {
+  const arq = $("arquivoFoto").files[0];
+  $("arquivoFoto").value = "";
+  if (!arq) return;
+  $("botaoFoto").classList.add("ocupado");
+  try {
+    const img = await fotoParaChat(arq);
+    await push(r("chat"), { uid, nome: meuNome, texto: $("texto").value.trim().slice(0, 500), img, resp: respondendo, cor: corBalao, em: serverTimestamp() });
+    $("texto").value = ""; $("enviar").classList.remove("on"); responder(null);
+  } catch (e) { toast(e.message?.startsWith("Matinê:") ? e.message.slice(8) : "A foto não foi. Tente outra."); }
+  finally { $("botaoFoto").classList.remove("ocupado"); }
+});
+function abrirFoto(src) { $("fotoGrande").src = src; $("visualizador").classList.add("show"); $("fecharFoto").focus(); }
+$("fecharFoto").addEventListener("click", () => $("visualizador").classList.remove("show"));
+$("visualizador").addEventListener("click", (e) => { if (e.target.id === "visualizador") $("visualizador").classList.remove("show"); });
 
 // ---------- Responder uma mensagem (arrastar para o lado ou toque duplo) ----------
 let respondendo = null;
