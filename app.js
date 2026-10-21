@@ -4,7 +4,7 @@ import {
   getDatabase, ref, get, set, update, push, onValue, onChildAdded, onDisconnect,
   query, limitToLast, serverTimestamp, connectDatabaseEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
-import { firebaseConfig } from "./config.js";
+import { firebaseConfig, chaveFirebase, chaveDriveFixa } from "./config.js";
 import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo, chaveValida, lerHash, montarHash } from "./sync.js";
 import { buscarCapa } from "./capa.js";
 import { abrirVideo } from "./video.js";
@@ -53,11 +53,11 @@ if (!firebaseConfig.databaseURL) {
 const local = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const doLink = lerHash(location.hash);
 // A chave vem do convite ou fica guardada neste aparelho depois da primeira vez.
-let chave = local ? "teste" : doLink.chave || guardado("matine-chave");
+let chave = local ? "teste" : chaveFirebase || doLink.chave || guardado("matine-chave");
 if (doLink.chave) guardar("matine-chave", doLink.chave);
 
 // Chave do Google Drive: quem abre a sala cola uma vez (fica neste aparelho) e ela vai junto na sala.
-let minhaChaveDrive = guardado("matine-chave-drive");
+let minhaChaveDrive = chaveDriveFixa || guardado("matine-chave-drive");
 const chaveDrive = () => info?.chaveDrive || minhaChaveDrive;
 /** Lê a chave do Drive digitada (se tiver) antes de validar um link. */
 function lerChaveDrive(campo) {
@@ -155,7 +155,7 @@ async function criarSala(link, titulo, capa) {
     } catch (e) { if (tentativa === 4) throw new Error("Não consegui criar a sala. Confira as regras do banco (README)."); }
   }
   await set(r("estado"), { tocando: false, pos: 0, em: serverTimestamp(), por: uid });
-  history.replaceState(null, "", montarHash(codigo, local ? "" : chave));
+  history.replaceState(null, "", montarHash(codigo, local || chaveFirebase ? "" : chave));
   info = (await get(r("info"))).val();
 }
 function nomeDoArquivo(link) {
@@ -455,7 +455,7 @@ $("mini").addEventListener("click", () => { $("codigoFolha").textContent = codig
 $("fechar").addEventListener("click", () => $("folha").classList.remove("show"));
 $("folha").addEventListener("click", (e) => { if (e.target.id === "folha") $("folha").classList.remove("show"); });
 $("convidar").addEventListener("click", async () => {
-  const link = `${location.origin}${location.pathname}${montarHash(codigo, local ? "" : chave)}`;
+  const link = `${location.origin}${location.pathname}${montarHash(codigo, local || chaveFirebase ? "" : chave)}`;
   const texto = `Vem assistir ${info?.titulo || "um filme"} comigo na Matinê: ${link}`;
   if (window.Matine?.compartilhar) { window.Matine.compartilhar(texto); return; } // app Android
   if (navigator.share) { try { await navigator.share({ text: texto }); return; } catch (e) { if (e.name === "AbortError") return; } }
