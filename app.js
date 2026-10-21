@@ -122,6 +122,7 @@ $("salvarChave").addEventListener("click", () => {
   codigo = "";
   $("textoInicio").textContent = "Cole o link de um vídeo, abra a sala e mande o convite.";
   $("campoFilme").hidden = false;
+  $("comCodigo").hidden = false;
   $("entrar").textContent = "Abrir sala";
   $("entrar").disabled = false;
 })();
@@ -163,6 +164,15 @@ function nomeDoArquivo(link) {
   try { const n = decodeURIComponent(new URL(link).pathname.split("/").pop() || ""); return (n.includes(".") && limparTitulo(n)) || "Filme"; }
   catch { return "Filme"; }
 }
+
+// ---------- Entrar com código ----------
+function entrarComCodigo() {
+  const c = $("codigoDigitado").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!codigoValido(c)) { $("erroInicio").textContent = "O código tem 6 letras e números, como ABC234."; return; }
+  location.hash = c; // o hashchange recarrega a página já na sala
+}
+$("irCodigo").addEventListener("click", entrarComCodigo);
+$("codigoDigitado").addEventListener("keydown", (e) => { if (e.key === "Enter") entrarComCodigo(); });
 
 // ---------- Capa do filme ----------
 /** Mostra a capa em `el`. Os dados vêm do banco (escritos por quem abriu a sala): só aceita endereços da Wikipédia. */
@@ -593,7 +603,9 @@ $("mini").addEventListener("click", () => { $("codigoFolha").textContent = codig
 $("fechar").addEventListener("click", () => $("folha").classList.remove("show"));
 $("folha").addEventListener("click", (e) => { if (e.target.id === "folha") $("folha").classList.remove("show"); });
 $("convidar").addEventListener("click", async () => {
-  const link = `${location.origin}${location.pathname}${montarHash(codigo, local || chaveFirebase ? "" : chave)}`;
+  // Link curto (dmwnezes.com/matine/ABC234); o 404.html leva para a sala. Sem chave fixa, a chave vai no #.
+  const levaChave = !local && !chaveFirebase;
+  const link = levaChave ? `${location.origin}${location.pathname}${montarHash(codigo, chave)}` : `${location.origin}${location.pathname}${codigo}`;
   const texto = `Vem assistir ${info?.titulo || "um filme"} comigo na Matinê: ${link}`;
   if (window.Matine?.compartilhar) { window.Matine.compartilhar(texto); return; } // app Android
   if (navigator.share) { try { await navigator.share({ text: texto }); return; } catch (e) { if (e.name === "AbortError") return; } }

@@ -154,6 +154,10 @@
   @keyframes pop { 0% { transform: scale(1.5); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 100% { transform: scale(.92); opacity: 1 } }
   /* Capa do filme (Wikipédia) */
   .campoDrive input { width: 100%; }
+  .com-codigo { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 320px; color: var(--muted); font-size: 13px; }
+  .com-codigo span { flex: none; }
+  .com-codigo input { flex: 1; min-width: 0; padding: 10px 12px !important; font-size: 16px !important; text-transform: uppercase; letter-spacing: 3px; text-align: center; }
+  .com-codigo .btn { padding: 10px 16px; font-size: 14px; }
   /* Responder mensagem */
   .msg { transition: transform .15s; touch-action: pan-y; }
   .cita { margin: 2px 0 4px; padding: 4px 8px; border-left: 3px solid currentColor; border-radius: 8px; background: rgba(0,0,0,.15); font-size: 12px; opacity: .85; display: flex; flex-direction: column; overflow-wrap: anywhere; }
@@ -233,6 +237,11 @@
     <div class="campoDrive" id="campoDrive" hidden><input type="text" id="chaveDrive" placeholder="Chave do Google Drive (AIza…)" aria-label="Chave do Google Drive" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
   </div>
   <button class="btn" id="entrar" disabled>Entrar</button>
+  <div class="com-codigo" id="comCodigo" hidden>
+    <span>Recebeu um código?</span>
+    <input type="text" id="codigoDigitado" placeholder="ABC234" maxlength="6" aria-label="Código da sala" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go">
+    <button class="btn ghost" id="irCodigo" type="button">Entrar</button>
+  </div>
   <div class="dica" id="dicaInstalar" hidden>
     <span>Para ter a Matinê como app: toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</span>
     <button type="button" id="fecharDica" aria-label="Fechar dica">✕</button>

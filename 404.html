@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#120E2B">
+<title>Matinê</title>
+<meta property="og:site_name" content="Matinê">
+<meta property="og:title" content="Vem assistir comigo na Matinê">
+<meta property="og:description" content="Cada um no seu aparelho, no mesmo segundo. Toque no link para entrar na sala.">
+<meta property="og:image" content="https://dmwnezes.com/matine/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>html,body{margin:0;height:100%;background:#120E2B}</style>
+<script>
+  // Link curto da sala: /matine/ABC234 → /matine/#ABC234 (o GitHub Pages não tem servidor, então isso
+  // acontece aqui, na página de "não encontrado"). Qualquer outro endereço volta para o início.
+  (function () {
+    var partes = location.pathname.split("/").filter(Boolean);
+    var i = partes.indexOf("matine");
+    var base = i >= 0 ? "/" + partes.slice(0, i + 1).join("/") + "/" : "/";
+    var codigo = (partes[i + 1] || "").toUpperCase();
+    location.replace(base + (/^[A-HJ-NP-Z2-9]{6}$/.test(codigo) ? "#" + codigo : ""));
+  })();
+</script>
+</head>
+<body></body>
+</html>
