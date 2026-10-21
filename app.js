@@ -259,7 +259,7 @@ async function entrarNaSala() {
   onValue(r("info"), (s) => { if (s.exists()) mudouInfo(s.val()); });
   onValue(r("estado"), (s) => { if (s.exists()) { estado = s.val(); aplicar(); } });
   onValue(r("pessoas"), (s) => mudouPessoas(s.val() || {}));
-  onChildAdded(query(r("chat"), limitToLast(100)), (s) => mostrarMensagem(s.val()));
+  onChildAdded(query(r("chat"), limitToLast(100)), (s) => mostrarMensagem(s.val(), s.key));
   onChildAdded(query(r("reacoes"), limitToLast(1)), (s) => { const x = s.val(); if (x.em >= entrouEm - 2000) flutuar(x); });
 }
 
@@ -430,7 +430,7 @@ function rolarSeNoFim(fn) {
   if (noFim) c.scrollTop = c.scrollHeight;
 }
 let brotos = null;
-function mostrarMensagem(m) {
+function mostrarMensagem(m, id) {
   // Easter egg: "/brotos" e "/tchau" não viram balão; chamam (ou mandam embora) os Brotos para todo mundo.
   const cmd = comandoBrotos(m.texto);
   if (cmd) {
@@ -439,6 +439,8 @@ function mostrarMensagem(m) {
     if ((m.em || 0) >= entrouEm - 5000) { brotos ??= iniciarBrotos($("chat")); brotos[cmd](); } // histórico antigo não chama
     return;
   }
+  const carta = /^\/carta\s+([\s\S]+)/i.exec(m.texto || "");
+  if (carta) { rolarSeNoFim((c) => c.appendChild(cartaIngresso(m, id, carta[1].trim().slice(0, 140)))); return; }
   let bolhaNova = null;
   rolarSeNoFim((c) => {
     const linha = document.createElement("div");
@@ -461,6 +463,64 @@ function mostrarMensagem(m) {
     bolhaNova = b;
   });
   brotos?.novaMensagem(bolhaNova, m.texto);
+}
+
+// ---------- /carta: o recado chega como um ingresso fechado; cada um abre o seu destacando o canhoto ----------
+const ICONE_INGRESSO = '<svg viewBox="0 0 100 100" aria-hidden="true"><path fill-rule="evenodd" fill="currentColor" d="M14,30Q14,24 20,24H80Q86,24 86,30V41A9,9 0,0 0,86 59V70Q86,76 80,76H20Q14,76 14,70V59A9,9 0,0 0,14 41Z M33,38V62L53,50Z"/></svg>';
+const cartasAbertas = new Set((() => { try { return JSON.parse(localStorage.getItem("matine-cartas") || "[]"); } catch { return []; } })());
+function cartaIngresso(m, id, texto) {
+  const minha = m.uid === uid, nome = m.uid === uid ? meuNome : m.nome || "Alguém";
+  const linha = document.createElement("div");
+  linha.className = "msg" + (minha ? " mine" : "");
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const caixa = el("div", "carta" + (minha || cartasAbertas.has(id) ? " aberta" : ""));
+  caixa.append(el("div", "carta-de", minha ? "🎟 Você mandou um recado" : `🎟 Recado de ${nome}`));
+  const bilhete = el("div", "carta-bilhete");
+  const corpo = el("div", "carta-corpo");
+  const poltrona = (parseInt(String(id).slice(-3), 36) % 20) + 1 || 7;
+  corpo.append(el("div", "carta-topo", "MATINÊ · SESSÃO DE HOJE"), el("div", "carta-titulo", "Um recado pra você"), el("div", "carta-linha", `de ${nome} · fileira M, poltrona ${poltrona}`));
+  const papel = el("div", "carta-papel", texto);
+  papel.append(el("span", "carta-ass", `— ${nome}`));
+  corpo.append(papel);
+  const canhoto = el("div", "carta-canhoto");
+  canhoto.innerHTML = ICONE_INGRESSO;
+  canhoto.append("ABRIR");
+  bilhete.append(corpo, canhoto);
+  caixa.append(bilhete);
+  if (minha) {
+    const lida = el("div", "carta-lida", "ainda não aberta");
+    caixa.append(lida);
+    if (id) onValue(r(`chat/${id}/abertas`), (s) => {
+      const quem = Object.values(s.val() || {});
+      lida.textContent = quem.length ? `✓ aberta por ${quem.join(", ")}` : "ainda não aberta";
+    }, () => {});
+  } else if (!caixa.classList.contains("aberta")) {
+    caixa.append(el("div", "carta-toque", "toque para abrir"));
+    caixa.tabIndex = 0;
+    caixa.setAttribute("role", "button");
+    caixa.setAttribute("aria-label", `Recado de ${nome}. Toque para abrir`);
+    const abrir = () => {
+      if (caixa.classList.contains("aberta")) return;
+      caixa.classList.add("aberta");
+      caixa.removeAttribute("role");
+      caixa.setAttribute("aria-label", `Recado de ${nome}: ${texto}`);
+      cartasAbertas.add(id);
+      try { localStorage.setItem("matine-cartas", JSON.stringify([...cartasAbertas].slice(-200))); } catch {}
+      if (id) set(r(`chat/${id}/abertas/${uid}`), meuNome.slice(0, 24)).catch(() => {}); // avisa quem mandou
+      const q = canhoto.getBoundingClientRect();
+      for (let i = 0; i < 12; i++) {
+        const f = el("i", "faisca");
+        const a = (i / 12) * Math.PI * 2, d = 26 + Math.random() * 24;
+        f.style.cssText = `left:${q.left + q.width / 2}px;top:${q.top + q.height / 2}px;--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px;background:${i % 2 ? "#E6C14F" : "#FFF6D8"}`;
+        document.body.appendChild(f);
+        setTimeout(() => f.remove(), 800);
+      }
+    };
+    caixa.addEventListener("click", abrir);
+    caixa.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(); } });
+  }
+  linha.append(caixa);
+  return linha;
 }
 function linhaSistema(t) { rolarSeNoFim((c) => { const d = document.createElement("div"); d.className = "sys"; d.textContent = t; c.appendChild(d); }); }
 

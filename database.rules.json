@@ -21,7 +21,13 @@
         "chat": {
           "$msg": {
             ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
-            ".validate": "newData.child('texto').isString() && newData.child('texto').val().length <= 500"
+            ".validate": "newData.child('texto').isString() && newData.child('texto').val().length <= 500",
+            "abertas": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid && data.parent().parent().exists()",
+                ".validate": "newData.isString() && newData.val().length <= 24"
+              }
+            }
           }
         },
         "reacoes": {

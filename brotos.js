@@ -190,7 +190,7 @@ export function iniciarBrotos(chat) {
 
   /** Mensagem nova no chat: susto em quem está perto e um curioso vai ver. */
   function novaMensagem(bolha, texto) {
-    if (!lista.length || saindo) return;
+    if (!bolha || !lista.length || saindo) return;
     const y = pos(bolha).y;
     lista.forEach((br) => { if (br.bolha && Math.abs(pos(br.bolha).y - y) < 140 && br.modo !== "pulando") assustar(br, false); });
     const curioso = sorteio(lista.filter((b) => b.modo !== "pulando" && b.modo !== "caindo"));

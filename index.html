@@ -21,7 +21,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     /* Paleta "Noite suave" (a mesma da Estante e do Palavreiro) */
@@ -154,6 +154,35 @@
   @keyframes pop { 0% { transform: scale(1.5); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 100% { transform: scale(.92); opacity: 1 } }
   /* Capa do filme (Wikipédia) */
   .campoDrive input { width: 100%; }
+  /* /carta: recado em forma de ingresso; tocar destaca o canhoto e mostra a mensagem */
+  .carta { width: 230px; max-width: 82%; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .carta.aberta { cursor: default; }
+  .carta-de { font-size: 12px; font-weight: 600; color: #5FB8A3; margin: 2px 0 4px 4px; }
+  .msg.mine .carta-de, .carta-lida { text-align: right; color: var(--muted); }
+  .carta-lida { font-size: 11px; margin-top: 4px; }
+  .carta-bilhete { position: relative; display: flex; min-height: 104px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.4)); }
+  .carta:not(.aberta) .carta-bilhete { animation: carta-chama 2.6s ease-in-out infinite; }
+  @keyframes carta-chama { 0%, 72%, 100% { transform: rotate(0) } 78% { transform: rotate(-2deg) } 84% { transform: rotate(2deg) } 90% { transform: rotate(-1deg) } }
+  .carta-corpo, .carta-canhoto { background: var(--yellow); color: #3A2E10; position: relative; }
+  .carta-corpo { flex: 1; min-width: 0; border-radius: 14px 0 0 14px; padding: 10px 12px; overflow: hidden; -webkit-mask: radial-gradient(circle 10px at 0 50%, transparent 98%, #000); mask: radial-gradient(circle 10px at 0 50%, transparent 98%, #000); }
+  .carta-canhoto { width: 56px; flex: none; border-radius: 0 14px 14px 0; border-left: 2px dashed rgba(58,46,16,.45); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 9px; font-weight: 800; letter-spacing: 1px; transform-origin: 0 100%; transition: transform .7s cubic-bezier(.4,0,.3,1), opacity .5s .3s; -webkit-mask: radial-gradient(circle 10px at 100% 50%, transparent 98%, #000); mask: radial-gradient(circle 10px at 100% 50%, transparent 98%, #000); }
+  .carta-canhoto svg { width: 26px; height: 26px; }
+  .carta-topo { font-size: 9px; font-weight: 800; letter-spacing: 1px; white-space: nowrap; opacity: .7; }
+  .carta-titulo { font-weight: 800; font-size: 16px; margin-top: 2px; }
+  .carta-linha { font-size: 11px; opacity: .75; margin-top: 2px; }
+  .carta-papel { position: absolute; inset: 0; padding: 10px 14px; background: #FFF6D8; font-family: Caveat, cursive; font-size: 20px; line-height: 1.12; color: #3A2E10; overflow-wrap: anywhere; opacity: 0; transform: translateY(8px); transition: opacity .4s .45s, transform .4s .45s; }
+  .carta-ass { display: block; text-align: right; font-size: 16px; color: #9A7A1E; }
+  .carta-toque { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+  .carta.aberta .carta-toque { display: none; }
+  /* o canhoto sai voando e sai do caminho: o recado ocupa o ingresso inteiro */
+  .carta.aberta .carta-canhoto { position: absolute; right: 0; top: 0; bottom: 0; transform: rotate(28deg) translate(20px, 30px); opacity: 0; pointer-events: none; }
+  .carta.aberta .carta-papel { position: relative; inset: auto; opacity: 1; transform: none; }
+  .carta.aberta .carta-bilhete { min-height: 0; }
+  .carta.aberta .carta-corpo { border-radius: 14px; -webkit-mask: none; mask: none; padding: 0; }
+  .carta.aberta .carta-topo, .carta.aberta .carta-titulo, .carta.aberta .carta-linha { display: none; }
+  .faisca { position: fixed; z-index: 50; width: 6px; height: 6px; border-radius: 50%; pointer-events: none; animation: faisca .8s ease-out forwards; }
+  @keyframes faisca { to { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0 } }
+  @media (prefers-reduced-motion: reduce) { .carta * { animation: none !important; transition: none !important; } }
   /* Brotos (/brotos no chat): vivem nos vãos entre as mensagens, por trás dos balões, sem cobrir texto */
   #chat { position: relative; transition: gap .3s, padding-top .3s; }
   #chat.com-brotos { gap: 32px; padding-top: 34px; }
