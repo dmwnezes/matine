@@ -9,6 +9,7 @@ import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, co
 import { buscarCapa } from "./capa.js";
 import { abrirVideo } from "./video.js";
 import { iniciarControles } from "./controles.js";
+import { iniciarBrotos, comandoBrotos } from "./brotos.js";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video");
@@ -428,7 +429,17 @@ function rolarSeNoFim(fn) {
   fn(c);
   if (noFim) c.scrollTop = c.scrollHeight;
 }
+let brotos = null;
 function mostrarMensagem(m) {
+  // Easter egg: "/brotos" e "/tchau" não viram balão; chamam (ou mandam embora) os Brotos para todo mundo.
+  const cmd = comandoBrotos(m.texto);
+  if (cmd) {
+    const quem = m.uid === uid ? "Você" : m.nome || "Alguém";
+    linhaSistema(cmd === "chamar" ? `✨ ${quem} chamou os Brotos` : `👋 ${quem} mandou os Brotos embora`);
+    if ((m.em || 0) >= entrouEm - 5000) { brotos ??= iniciarBrotos($("chat")); brotos[cmd](); } // histórico antigo não chama
+    return;
+  }
+  let bolhaNova = null;
   rolarSeNoFim((c) => {
     const linha = document.createElement("div");
     linha.className = "msg" + (m.uid === uid ? " mine" : "");
@@ -447,13 +458,17 @@ function mostrarMensagem(m) {
     b.appendChild(document.createTextNode(m.texto));
     linha.appendChild(b);
     c.appendChild(linha);
+    bolhaNova = b;
   });
+  brotos?.novaMensagem(bolhaNova, m.texto);
 }
 function linhaSistema(t) { rolarSeNoFim((c) => { const d = document.createElement("div"); d.className = "sys"; d.textContent = t; c.appendChild(d); }); }
 
 let digitandoTimer = 0;
 function marcarDigitando(sim) { if (uid && codigo) update(r(`pessoas/${uid}`), { digitando: sim }).catch(() => {}); }
+$("texto").addEventListener("blur", () => brotos?.olharPara(null));
 $("texto").addEventListener("input", () => {
+  brotos?.olharPara($("texto"));
   $("enviar").classList.toggle("on", $("texto").value.trim() !== "");
   if (!digitandoTimer) marcarDigitando(true);
   clearTimeout(digitandoTimer);

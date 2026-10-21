@@ -154,6 +154,31 @@
   @keyframes pop { 0% { transform: scale(1.5); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 100% { transform: scale(.92); opacity: 1 } }
   /* Capa do filme (Wikipédia) */
   .campoDrive input { width: 100%; }
+  /* Brotos (/brotos no chat): vivem nos vãos entre as mensagens, por trás dos balões, sem cobrir texto */
+  #chat { position: relative; transition: gap .3s, padding-top .3s; }
+  #chat.com-brotos { gap: 32px; padding-top: 34px; }
+  #chat.com-brotos .msg, #chat.com-brotos .sys { position: relative; z-index: 2; }
+  .brotos { position: absolute; left: 0; top: 0; width: 100%; height: 0; z-index: 1; pointer-events: none; }
+  .broto { position: absolute; left: 0; top: 0; width: 24px; height: 24px; pointer-events: auto; cursor: pointer; will-change: transform; touch-action: manipulation; }
+  .broto svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .broto .b-vira { transform-origin: 50px 50px; transition: transform .2s; }
+  .broto.esquerda .b-vira { transform: scaleX(-1); }
+  .broto .b-anda { transform-origin: 50px 100px; animation: b-respira 2.4s ease-in-out infinite; }
+  .broto.andando .b-anda { animation: b-passo .35s infinite alternate; }
+  @keyframes b-passo { from { transform: translateY(0) rotate(-4deg) } to { transform: translateY(-4px) rotate(4deg) } }
+  @keyframes b-respira { 50% { transform: scaleY(.95) } }
+  .broto .b-olhos { transition: transform .12s; }
+  .broto .b-susto, .broto .b-sono, .broto .b-amor, .broto .b-braco { display: none; }
+  .broto.susto .b-olhos, .broto.susto .b-boca, .broto.dorme .b-olhos, .broto.amor .b-olhos { display: none; }
+  .broto.susto .b-susto, .broto.dorme .b-sono, .broto.amor .b-amor, .broto.acena .b-braco { display: inline; }
+  .broto.pisca .b-olhos { transform: scaleY(.1); transform-box: fill-box; transform-origin: center; }
+  .broto.acena .b-braco { animation: b-aceno .3s infinite alternate; transform-origin: 80px 62px; transform-box: view-box; }
+  @keyframes b-aceno { to { transform: rotate(-35deg) } }
+  .brotos .zzz { position: absolute; left: 0; top: 0; font-style: normal; font-size: 10px; font-weight: 800; color: #C9C0FF; animation: b-zzz 2s ease-out forwards; }
+  @keyframes b-zzz { to { margin: -22px 0 0 8px; opacity: 0 } }
+  .bubble.balanca { animation: b-balanca .5s; }
+  @keyframes b-balanca { 25% { transform: rotate(-3deg) } 75% { transform: rotate(2deg) } }
+  @media (prefers-reduced-motion: reduce) { .broto .b-anda { animation: none !important; } }
   .com-codigo { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 320px; color: var(--muted); font-size: 13px; }
   .com-codigo span { flex: none; }
   .com-codigo input { flex: 1; min-width: 0; padding: 10px 12px !important; font-size: 16px !important; text-transform: uppercase; letter-spacing: 3px; text-align: center; }
