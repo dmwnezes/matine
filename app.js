@@ -28,8 +28,15 @@ const cores = ["#8E6BE8", "#E8836B", "#5FB8A3", "#E8C14F", "#6FA8E8", "#E56F9C"]
 const corDe = (nome) => { let h = 0; for (const c of nome.toLowerCase()) h = (h * 31 + c.charCodeAt(0)) | 0; return cores[((h % cores.length) + cores.length) % cores.length]; };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 /** Bolinha da pessoa: a foto escolhida ou a inicial do nome na cor dela. */
-const bolinha = (p) => svgDa(p.foto) ? `<span>${svgDa(p.foto)}</span>`
-  : `<span style="background:${corDe(p.nome || "?")}">${esc((p.nome || "?").trim().charAt(0).toUpperCase())}</span>`;
+const bolinha = (p, id = "") => svgDa(p.foto) ? `<span data-uid="${esc(id)}">${svgDa(p.foto)}</span>`
+  : `<span data-uid="${esc(id)}" style="background:${corDe(p.nome || "?")}">${esc((p.nome || "?").trim().charAt(0).toUpperCase())}</span>`;
+
+// ---------- Ajustes (ficam neste aparelho) ----------
+const CORES_BALAO = ["#9B8CFF", "#E6C14F", "#5FB873", "#6FA8E8", "#E8839E", "#E8A06B"];
+let corBalao = CORES_BALAO.includes(guardado("matine-cor")) ? guardado("matine-cor") : CORES_BALAO[0];
+const aplicarLetra = () => { document.body.dataset.letra = ["p", "m", "g"].includes(guardado("matine-letra")) ? guardado("matine-letra") : "m"; };
+aplicarLetra();
+const vibrar = (ms) => { if (guardado("matine-vibrar") !== "nao") try { navigator.vibrate?.(ms); } catch {} };
 
 $("nome").value = meuNome;
 function desenharFotos() {
@@ -387,7 +394,7 @@ function mostrarContagem() {
     const b = $("numeroContagem");
     b.textContent = n;
     b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop");
-    try { navigator.vibrate?.(30); } catch {}
+    vibrar(30);
   }, 50);
 }
 function esconderContagem() {
@@ -414,9 +421,9 @@ function mudouPessoas(novas) {
   primeiraLista = false;
   pessoas = novas;
   const lista = Object.entries(pessoas).sort(([a], [b]) => (a === uid ? -1 : b === uid ? 1 : 0));
-  $("bolas").innerHTML = lista.slice(0, 4).map(([, p]) => bolinha(p)).join("");
+  $("bolas").innerHTML = lista.slice(0, 4).map(([id, p]) => bolinha(p, id)).join("");
   $("nomes").textContent = lista.length > 1 ? lista.map(([id, p]) => id === uid ? "Você" : p.nome).join(", ") : "Só você por enquanto";
-  $("quem").innerHTML = lista.map(([id, p]) => `<div class="p ${id === uid ? "eu" : ""}">${bolinha(p)}<div>${id === uid ? "Você" : esc(p.nome)}</div></div>`).join("");
+  $("quem").innerHTML = lista.map(([id, p]) => `<div class="p ${id === uid ? "eu" : ""}">${bolinha(p, id)}<div>${id === uid ? "Você" : esc(p.nome)}</div></div>`).join("");
   const digitando = lista.filter(([id, p]) => id !== uid && p.digitando).map(([, p]) => p.nome);
   $("digitando").classList.toggle("on", digitando.length > 0);
   $("textoDigitando").textContent = digitando.length ? `${digitando.join(", ")} ${digitando.length > 1 ? "estão" : "está"} digitando…` : "";
@@ -449,6 +456,7 @@ function mostrarMensagem(m, id) {
     linha.dataset.texto = m.texto;
     const b = document.createElement("div");
     b.className = "bubble";
+    if (CORES_BALAO.includes(m.cor) && m.cor !== CORES_BALAO[0]) { b.style.background = m.cor; b.classList.add("colorido"); } // só cores da paleta
     if (m.uid !== uid) { const n = document.createElement("small"); n.style.color = corDe(m.nome || "?"); n.textContent = m.nome || "?"; b.appendChild(n); }
     if (m.resp?.texto) {
       const cita = document.createElement("div");
@@ -538,7 +546,7 @@ $("form").addEventListener("submit", (e) => {
   e.preventDefault();
   const texto = $("texto").value.trim();
   if (!texto) return;
-  push(r("chat"), { uid, nome: meuNome, texto, resp: respondendo, em: serverTimestamp() }).catch(() => toast("A mensagem não foi."));
+  push(r("chat"), { uid, nome: meuNome, texto, resp: respondendo, cor: corBalao, em: serverTimestamp() }).catch(() => toast("A mensagem não foi."));
   responder(null);
   $("texto").value = "";
   $("enviar").classList.remove("on");
@@ -574,7 +582,7 @@ function soltar() {
   const { linha, dx } = arrasto;
   arrasto = null;
   linha.style.transform = "";
-  if (dx > 55) { try { navigator.vibrate?.(15); } catch {} responder(linha); }
+  if (dx > 55) { vibrar(15); responder(linha); }
 }
 $("chat").addEventListener("pointerup", soltar);
 $("chat").addEventListener("pointercancel", soltar);
@@ -671,7 +679,60 @@ function flutuar(x) {
   f.innerHTML = `<b>${x.e}</b><span>${esc(x.uid === uid ? "você" : x.nome || "")}</span>`;
   $("flutuantes").appendChild(f);
   setTimeout(() => f.remove(), 2700);
+  // a foto de quem reagiu dá um pulinho na faixa de pessoas
+  document.querySelectorAll(`[data-uid="${CSS.escape(String(x.uid || ""))}"]`).forEach((el) => el.animate(
+    [{ transform: "translateY(0) scale(1)" }, { transform: "translateY(-8px) scale(1.15)" }, { transform: "translateY(0) scale(1)" }], { duration: 420, easing: "ease-out" }));
+  if (x.uid !== uid) vibrar(12);
 }
+
+// ---------- Tela de ajustes ----------
+function abrirAjustes() {
+  $("ajNome").value = meuNome;
+  $("ajFotos").innerHTML = FOTOS.map(([k, rotulo, svg]) =>
+    `<button type="button" data-k="${k}" aria-label="${esc(rotulo)}" aria-pressed="${k === minhaFoto}" class="${k === minhaFoto ? "on" : ""}">${svg}</button>`).join("");
+  $("ajCores").innerHTML = CORES_BALAO.map((c, i) =>
+    `<button type="button" data-c="${c}" style="background:${c}" aria-label="Cor ${i + 1}" aria-pressed="${c === corBalao}" class="${c === corBalao ? "on" : ""}"></button>`).join("");
+  document.querySelectorAll("#ajLetra button").forEach((b) => b.classList.toggle("on", b.dataset.l === document.body.dataset.letra));
+  $("ajVibrar").checked = guardado("matine-vibrar") !== "nao";
+  $("ajApagar").textContent = "Apagar meus dados deste aparelho";
+  $("ajApagar").dataset.confirma = "";
+  $("folha").classList.remove("show");
+  $("ajustes").classList.add("show");
+}
+$("ajFotos").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  minhaFoto = b.dataset.k; guardar("matine-foto", minhaFoto);
+  $("ajFotos").querySelectorAll("button").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); });
+  desenharFotos(); atualizarPerfil();
+});
+$("ajCores").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  corBalao = b.dataset.c; guardar("matine-cor", corBalao);
+  $("ajCores").querySelectorAll("button").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); });
+});
+$("ajLetra").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  guardar("matine-letra", b.dataset.l); aplicarLetra();
+  document.querySelectorAll("#ajLetra button").forEach((x) => x.classList.toggle("on", x === b));
+});
+$("ajVibrar").addEventListener("change", () => guardar("matine-vibrar", $("ajVibrar").checked ? "sim" : "nao"));
+$("ajNome").addEventListener("change", () => {
+  const n = $("ajNome").value.trim().slice(0, 24);
+  if (!n) { $("ajNome").value = meuNome; return; }
+  meuNome = n; guardar("matine-nome", n); $("nome").value = n; atualizarPerfil();
+});
+/** Na sala, troca o nome e a foto para todo mundo. */
+function atualizarPerfil() { if (uid && codigo && $("sala").classList.contains("on")) update(r(`pessoas/${uid}`), { nome: meuNome, foto: minhaFoto }).catch(() => {}); }
+$("ajApagar").addEventListener("click", () => {
+  const b = $("ajApagar");
+  if (!b.dataset.confirma) { b.dataset.confirma = "1"; b.textContent = "Toque de novo para apagar tudo"; return; }
+  try { Object.keys(localStorage).filter((k) => k.startsWith("matine-")).forEach((k) => localStorage.removeItem(k)); } catch {}
+  location.reload();
+});
+$("ajFechar").addEventListener("click", () => $("ajustes").classList.remove("show"));
+$("ajustes").addEventListener("click", (e) => { if (e.target.id === "ajustes") $("ajustes").classList.remove("show"); });
+$("abrirAjustes").addEventListener("click", abrirAjustes);
+$("ajustesSala").addEventListener("click", abrirAjustes);
 
 // ---------- Folha: convidar e trocar filme ----------
 $("mini").addEventListener("click", () => { $("codigoFolha").textContent = codigo; $("trocaFilme").hidden = true; $("folha").classList.add("show"); });

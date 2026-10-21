@@ -154,6 +154,30 @@
   @keyframes pop { 0% { transform: scale(1.5); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 100% { transform: scale(.92); opacity: 1 } }
   /* Capa do filme (Wikipédia) */
   .campoDrive input { width: 100%; }
+  /* Ajustes */
+  .dialogo { position: fixed; inset: 0; z-index: 31; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(10,7,30,.72); }
+  .dialogo.show { display: flex; }
+  .dialogo .box { width: 100%; max-width: 380px; max-height: 90vh; overflow-y: auto; padding: 20px; border-radius: 28px; background: var(--card); display: flex; flex-direction: column; gap: 14px; }
+  .dialogo h2 { margin: 0; font-size: 18px; font-weight: 600; text-align: center; }
+  .aj-item { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); }
+  .aj-item input[type=text] { max-width: none; }
+  .aj-linha { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+  .aj-linha input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+  .dialogo .picks { grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .dialogo .picks button { width: 100%; height: auto; aspect-ratio: 1; }
+  .cores { display: flex; gap: 10px; }
+  .cores button { width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+  .cores button.on { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px var(--text); transform: scale(1.08); }
+  .segmentos { display: flex; gap: 6px; }
+  .segmentos button { flex: 1; height: 44px; border: 0; border-radius: 14px; background: var(--card2); color: var(--text); font-family: inherit; font-weight: 600; cursor: pointer; }
+  .segmentos button.on { background: var(--accent); color: var(--on-accent); }
+  .aj-apagar { color: var(--red) !important; box-shadow: inset 0 0 0 1.5px rgba(229,115,122,.5) !important; }
+  .link-ajustes { border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; padding: 6px; }
+  /* Tamanho da letra e cor do balão */
+  body[data-letra="p"] #chat .bubble { font-size: 13px; }
+  body[data-letra="g"] #chat .bubble { font-size: 18px; }
+  .bubble.colorido { color: var(--on-accent); }
+  .bubble.colorido small { color: var(--on-accent) !important; opacity: .7; }
   /* /carta: recado em forma de ingresso; tocar destaca o canhoto e mostra a mensagem */
   .carta { width: 230px; max-width: 82%; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .carta.aberta { cursor: default; }
@@ -291,6 +315,7 @@
     <div class="campoDrive" id="campoDrive" hidden><input type="text" id="chaveDrive" placeholder="Chave do Google Drive (AIza…)" aria-label="Chave do Google Drive" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
   </div>
   <button class="btn" id="entrar" disabled>Entrar</button>
+  <button class="link-ajustes" id="abrirAjustes" type="button">⚙ Ajustes</button>
   <div class="com-codigo" id="comCodigo" hidden>
     <span>Recebeu um código?</span>
     <input type="text" id="codigoDigitado" placeholder="ABC234" maxlength="6" aria-label="Código da sala" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go">
@@ -361,7 +386,25 @@
       <button class="btn" id="salvarFilme" type="button">Passar este</button>
       <p class="err" id="erroTroca" role="alert"></p>
     </div>
-    <button class="btn ghost" id="fechar" type="button">Fechar</button>
+    <div class="acoes">
+      <button class="btn ghost" id="ajustesSala" type="button">Ajustes</button>
+      <button class="btn ghost" id="fechar" type="button">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div id="ajustes" class="dialogo" role="dialog" aria-modal="true" aria-labelledby="ajTitulo">
+  <div class="box">
+    <h2 id="ajTitulo">Ajustes</h2>
+    <label class="aj-item"><span>Seu nome</span><input type="text" id="ajNome" maxlength="24" autocomplete="nickname"></label>
+    <div class="aj-item"><span>Sua foto</span><div class="picks" id="ajFotos" role="group" aria-label="Fotos de perfil"></div></div>
+    <div class="aj-item"><span>Cor do seu balão no chat</span><div class="cores" id="ajCores" role="group" aria-label="Cor do balão"></div></div>
+    <div class="aj-item"><span>Tamanho da letra do chat</span>
+      <div class="segmentos" id="ajLetra" role="group" aria-label="Tamanho da letra"><button type="button" data-l="p" style="font-size:13px">A</button><button type="button" data-l="m" style="font-size:16px">A</button><button type="button" data-l="g" style="font-size:20px">A</button></div></div>
+    <label class="aj-item aj-linha"><span>Vibrar na contagem e nas reações</span><input type="checkbox" id="ajVibrar"></label>
+    <button class="btn ghost aj-apagar" id="ajApagar" type="button">Apagar meus dados deste aparelho</button>
+    <p class="hint">Apaga nome, foto, cores e recados abertos guardados aqui. Não apaga nada da sala.</p>
+    <button class="btn" id="ajFechar" type="button">Pronto</button>
   </div>
 </div>
 <div id="toast" role="status"></div>
