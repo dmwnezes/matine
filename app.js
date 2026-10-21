@@ -6,6 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 import { firebaseConfig, chaveDrive } from "./config.js";
 import { esperado, correcao, ehNovidade, linkDoVideo, novoCodigo, codigoValido } from "./sync.js";
+import { abrirVideo } from "./video.js";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video");
@@ -158,8 +159,18 @@ function mudouInfo(novo) {
   if (!trocou) return;
   const v = linkDoVideo(info.link, chaveDrive);
   if (v.erro) { avisar(v.erro); return; }
+  carregarFilme(v.url);
+}
+
+let filmeAberto = null;
+async function carregarFilme(url) {
   esconderAviso();
-  video.src = v.url;
+  filmeAberto?.fechar();
+  filmeAberto = null;
+  const meu = (carregarFilme.vez = (carregarFilme.vez || 0) + 1);
+  const aberto = await abrirVideo(video, url, (msg) => avisar(msg, "Tentar de novo", () => carregarFilme(url)));
+  if (meu !== carregarFilme.vez) aberto.fechar(); // trocaram o filme enquanto este abria
+  else filmeAberto = aberto;
 }
 
 // ---------- Sincronia do vídeo ----------
@@ -216,9 +227,9 @@ video.addEventListener("error", () => {
   const motivo = {
     2: "A internet caiu no meio do carregamento.",
     3: "O arquivo veio com defeito.",
-    4: "Não consegui abrir esse vídeo. O link pode ser privado, ter passado do limite de downloads do Google Drive ou estar num formato que o navegador não toca (use MP4).",
+    4: "Não consegui abrir esse vídeo. O link pode ser privado, ter passado do limite de downloads do Google Drive ou estar num formato que este aparelho não toca.",
   }[video.error?.code] || "Não consegui tocar o vídeo.";
-  avisar(motivo, "Tentar de novo", () => { esconderAviso(); video.load(); });
+  avisar(motivo, "Tentar de novo", () => { const v = linkDoVideo(info?.link, chaveDrive); if (v.url) carregarFilme(v.url); });
 });
 
 function avisar(texto, botao, acao) {

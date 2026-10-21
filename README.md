@@ -15,9 +15,21 @@ Cada pessoa carrega o vídeo direto do link. A sala só guarda **o estado** — 
 
 Bloquear a tela ou trocar de app no celular não pausa a sala; ao voltar, o vídeo alcança os outros sozinho.
 
-## Links que funcionam
+## Arquivos e links que funcionam
 
-- Link direto de arquivo de vídeo (`.mp4` com H.264 é o que toca em todo lugar, inclusive no iPhone).
+**Formatos:** MP4, M4V, MKV, WebM, MOV, MPEG-TS (.ts), HLS (.m3u8), OGG e arquivos só de áudio (MP3, FLAC, WAV, AAC).
+**Vídeo:** H.264, H.265/HEVC, VP8, VP9 e AV1. **Áudio:** AAC, MP3, Opus, Vorbis, FLAC, PCM e Dolby Digital (AC-3 / E-AC-3, comum em filmes MKV).
+
+Como funciona: se o aparelho toca o arquivo do jeito que ele é, toca direto. Se não toca (um MKV no iPhone, áudio Dolby, HEVC num aparelho sem decodificador…), o site converte **enquanto o filme passa**, só a parte necessária: o que já é compatível é copiado, o resto é recodificado no próprio aparelho. Som 5.1 vira estéreo. Pular para um trecho ainda não convertido recomeça a conversão dali.
+
+Limites:
+- **AVI, WMV, FLV e DivX/Xvid** não abrem — converta para MP4 antes.
+- HEVC só toca em aparelhos que decodificam HEVC (a maioria dos celulares recentes e o iPhone; alguns computadores não).
+- A conversão usa o processador do aparelho: filmes 4K com áudio Dolby podem engasgar em celulares fracos.
+- O servidor do arquivo precisa permitir leitura por outros sites (CORS) para a conversão funcionar. Google Drive (com a chave do passo 4), Dropbox, Archive.org e a maioria dos servidores de arquivos permitem; se não permitir, a sala tenta tocar direto.
+
+**Links:**
+- Link direto do arquivo.
 - Dropbox (o link de compartilhar é convertido sozinho).
 - Google Drive, se a chave do Google estiver no `config.js` (passo 4) e o arquivo estiver compartilhado como "qualquer pessoa com o link". O Google pode bloquear arquivos muito baixados ("limite de downloads"); aí a sala avisa que não conseguiu abrir.
 - YouTube **não** funciona (o YouTube não deixa tocar fora do player dele).
@@ -68,6 +80,7 @@ Abrindo o site em `localhost`, ele usa o emulador do Firebase (`firebase emulato
 | `index.html` | Telas e visual (paleta "Noite suave", a mesma da Estante e do Palavreiro) |
 | `app.js` | Sala: Firebase, player, chat, reações, convite |
 | `sync.js` | Contas da sincronia e leitura dos links (testado em `test/`) |
+| `video.js` | Abre o vídeo: direto quando o aparelho toca, ou convertendo em tempo real ([Mediabunny](https://mediabunny.dev)) |
 | `config.js` | Dados do seu Firebase e chave opcional do Drive |
 | `database.rules.json` | Regras de segurança do banco |
 | `avatars.js` | Fotos de perfil (as mesmas da Estante) |
