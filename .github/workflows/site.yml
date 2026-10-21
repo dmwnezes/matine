@@ -1,0 +1,41 @@
+name: Publicar site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Colocar a chave do Firebase
+        env:
+          CHAVE: ${{ secrets.FIREBASE_API_KEY }}
+        run: |
+          test -n "$CHAVE" || { echo "Falta o segredo FIREBASE_API_KEY em Settings > Secrets and variables > Actions"; exit 1; }
+          mkdir _site
+          cp index.html app.js sync.js video.js capa.js config.js avatars.js icone.svg icone-180.png og.png _site/
+          sed -i "s|__CHAVE_FIREBASE__|$CHAVE|" _site/config.js
+          grep -q "__CHAVE_FIREBASE__" _site/config.js && exit 1 || true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
