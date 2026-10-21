@@ -235,10 +235,10 @@ async function entrarNaSala() {
     await onDisconnect(eu).remove();
     // Fim da sessão: quem sai marca a sala como vazia. Enquanto houver alguém dentro, a marca é apagada na hora;
     // se ninguém ficar, a sala (com chat e tudo) é apagada 10 min depois por quem abrir a Matinê.
-    await onDisconnect(ref(db, `vazias/${codigo}`)).set(serverTimestamp());
+    await onDisconnect(ref(db, `vazias/${codigo}`)).set(serverTimestamp()).catch(() => {}); // sem as regras novas: só não marca
     await set(eu, meusDados());
   });
-  onValue(ref(db, `vazias/${codigo}`), (s) => { if (s.exists()) remove(s.ref).catch(() => {}); });
+  onValue(ref(db, `vazias/${codigo}`), (s) => { if (s.exists()) remove(s.ref).catch(() => {}); }, () => {});
   entrouEm = agora();
 
   $("inicio").hidden = true;
