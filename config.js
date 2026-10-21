@@ -9,4 +9,4 @@ export const firebaseConfig = {
 };
 
 // Opcional: chave do Google para tocar links do Google Drive (README, passo 4). Vazio = links do Drive desligados.
-export const chaveDrive = "";
+export const chaveDrive = "AIzaSyD3dpL49NNV6T0FQSGAuOviontjGJ06b-U";
