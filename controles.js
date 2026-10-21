@@ -19,8 +19,10 @@ export function iniciarControles(video, player) {
   const $ = (id) => document.getElementById(id);
   const app = window.Matine; // app Android: brilho e volume do próprio celular
   const ehIphone = /iPhone|iPad|iPod/.test(navigator.userAgent);
-  let brilho = app?.brilhoAtual?.() ?? 1;
-  let volume = app?.volumeAtual?.() ?? video.volume;
+  // A ponte do app pode falhar (versão antiga do app, Android diferente): nunca derruba a sala por isso.
+  const doApp = (f, padrao) => { try { return f() ?? padrao; } catch { return padrao; } };
+  let brilho = doApp(() => app?.brilhoAtual?.(), 1);
+  let volume = doApp(() => app?.volumeAtual?.(), video.volume);
 
   // ---------- Mostrar e esconder ----------
   let esconderTimer = 0;
@@ -106,11 +108,11 @@ export function iniciarControles(video, player) {
     }
     if (toque.modo === "brilho") {
       brilho = limitar(toque.inicio - dy / (r.height * 0.8), 0.15, 1);
-      if (app?.brilho) app.brilho(brilho); else video.style.filter = brilho < 1 ? `brightness(${brilho})` : "";
+      if (app?.brilho) doApp(() => app.brilho(brilho)); else video.style.filter = brilho < 1 ? `brightness(${brilho})` : "";
       avisar(`☀ ${Math.round(brilho * 100)}%`, "esq");
     } else if (toque.modo === "volume") {
       volume = limitar(toque.inicio - dy / (r.height * 0.8), 0, 1);
-      if (app?.volume) app.volume(volume); else { video.volume = volume; video.muted = volume === 0; }
+      if (app?.volume) doApp(() => app.volume(volume)); else { video.volume = volume; video.muted = volume === 0; }
       avisar(`${volume === 0 ? "🔇" : "🔊"} ${Math.round(volume * 100)}%`, "dir");
     }
   });

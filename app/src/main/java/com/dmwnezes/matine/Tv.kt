@@ -68,7 +68,7 @@ class Tv(
         override fun onSessionStarted(s: CastSession, id: String) = carregar(s)
         override fun onSessionResumed(s: CastSession, voltou: Boolean) = carregar(s)
         override fun onSessionStartFailed(s: CastSession, erro: Int) = js("tvFalhou('Não consegui conectar na TV.')")
-        override fun onSessionEnded(s: CastSession, erro: Int) { mandei = null; js("tvDesligou()") }
+        override fun onSessionEnded(s: CastSession, erro: Int) { mandei = null; volumeTv = null; js("tvDesligou()") }
         override fun onSessionStarting(s: CastSession) {}
         override fun onSessionEnding(s: CastSession) {}
         override fun onSessionResuming(s: CastSession, id: String) {}
@@ -131,6 +131,7 @@ class Tv(
             .build()
         val c = s.remoteMediaClient ?: return
         c.registerCallback(doFilme)
+        volumeTv = s.volume
         mandei = f.tocando
         c.load(MediaLoadRequestData.Builder().setMediaInfo(midia).setAutoplay(f.tocando).setCurrentTime((f.pos * 1000).toLong()).build())
         js("tvLigou()")
@@ -151,10 +152,16 @@ class Tv(
     fun volume(v: Double): Boolean {
         val s = sessao ?: return false
         runCatching { s.volume = v }
+        volumeTv = v
         return true
     }
 
-    val volumeAtual: Double? get() = sessao?.volume
+    /**
+     * Volume da TV para o site ler. O site lê pela ponte, fora da thread principal, e o Cast só pode ser
+     * usado na thread principal: por isso fica guardado aqui em vez de perguntar à sessão.
+     */
+    @Volatile var volumeTv: Double? = null
+        private set
 
     fun parar() { cast?.sessionManager?.endCurrentSession(true) }
 }

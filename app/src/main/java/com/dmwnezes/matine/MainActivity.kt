@@ -226,7 +226,7 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun brilho(v: Float) = runOnUiThread { window.attributes = window.attributes.apply { screenBrightness = v.coerceIn(0.05f, 1f) } }
         @JavascriptInterface
-        fun volumeAtual(): Float = tv.volumeAtual?.toFloat()
+        fun volumeAtual(): Float = tv.volumeTv?.toFloat()
             ?: (audio.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC))
         @JavascriptInterface
         fun volume(v: Float) = runOnUiThread {
