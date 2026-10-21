@@ -2,11 +2,14 @@ package com.dmwnezes.matine
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.PictureInPictureParams
+import android.content.res.Configuration
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Rational
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -37,6 +40,8 @@ class MainActivity : Activity() {
     private lateinit var raiz: FrameLayout
     private lateinit var web: WebView
     private var telaCheia: View? = null
+    /** O site avisa quando o filme está tocando: só aí vale virar janelinha ao sair do app. */
+    @Volatile private var tocando = false
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,6 +85,23 @@ class MainActivity : Activity() {
             web.canGoBack() -> web.goBack()
             else -> @Suppress("DEPRECATION") super.onBackPressed()
         }
+    }
+
+    /** Janelinha flutuante: o filme continua num cantinho enquanto a pessoa usa outro app. */
+    private fun janelinha() = PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).apply {
+        // Android 12+: entra sozinho ao sair do app com o gesto de voltar para o início.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setAutoEnterEnabled(tocando)
+    }.build()
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (tocando && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) runCatching { enterPictureInPictureMode(janelinha()) }
+    }
+
+    override fun onPictureInPictureModeChanged(naJanelinha: Boolean, novaConfig: Configuration) {
+        super.onPictureInPictureModeChanged(naJanelinha, novaConfig)
+        // Na janelinha, o site mostra só o filme (sem chat nem botões).
+        web.evaluateJavascript("document.body.classList.toggle('pip', $naJanelinha)", null)
     }
 
     override fun onDestroy() {
@@ -166,6 +188,12 @@ class MainActivity : Activity() {
 
     /** O que o site pode pedir ao app (window.Matine no JavaScript). */
     private inner class Ponte {
+        @JavascriptInterface
+        fun tocando(sim: Boolean) {
+            tocando = sim
+            runOnUiThread { runCatching { setPictureInPictureParams(janelinha()) } }
+        }
+
         @JavascriptInterface
         fun compartilhar(texto: String) {
             val envio = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, texto.take(1000))

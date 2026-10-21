@@ -406,9 +406,18 @@ function mostrarMensagem(m) {
   rolarSeNoFim((c) => {
     const linha = document.createElement("div");
     linha.className = "msg" + (m.uid === uid ? " mine" : "");
+    linha.dataset.nome = m.uid === uid ? meuNome : m.nome || "?";
+    linha.dataset.texto = m.texto;
     const b = document.createElement("div");
     b.className = "bubble";
     if (m.uid !== uid) { const n = document.createElement("small"); n.style.color = corDe(m.nome || "?"); n.textContent = m.nome || "?"; b.appendChild(n); }
+    if (m.resp?.texto) {
+      const cita = document.createElement("div");
+      cita.className = "cita";
+      const quem = document.createElement("b"); quem.textContent = String(m.resp.nome || "?").slice(0, 24);
+      cita.append(quem, String(m.resp.texto).slice(0, 80));
+      b.appendChild(cita);
+    }
     b.appendChild(document.createTextNode(m.texto));
     linha.appendChild(b);
     c.appendChild(linha);
@@ -428,11 +437,80 @@ $("form").addEventListener("submit", (e) => {
   e.preventDefault();
   const texto = $("texto").value.trim();
   if (!texto) return;
-  push(r("chat"), { uid, nome: meuNome, texto, em: serverTimestamp() }).catch(() => toast("A mensagem não foi."));
+  push(r("chat"), { uid, nome: meuNome, texto, resp: respondendo, em: serverTimestamp() }).catch(() => toast("A mensagem não foi."));
+  responder(null);
   $("texto").value = "";
   $("enviar").classList.remove("on");
   clearTimeout(digitandoTimer); digitandoTimer = 0; marcarDigitando(false);
 });
+
+// ---------- Responder uma mensagem (arrastar para o lado ou toque duplo) ----------
+let respondendo = null;
+function responder(linha) {
+  respondendo = linha ? { nome: linha.dataset.nome, texto: linha.dataset.texto.slice(0, 80) } : null;
+  $("resposta").hidden = !respondendo;
+  if (!respondendo) return;
+  $("respostaNome").textContent = respondendo.nome;
+  $("respostaTexto").textContent = respondendo.texto;
+  $("texto").focus();
+}
+$("cancelarResposta").addEventListener("click", () => responder(null));
+$("chat").addEventListener("dblclick", (e) => { const l = e.target.closest(".msg"); if (l) responder(l); });
+let arrasto = null;
+$("chat").addEventListener("pointerdown", (e) => {
+  const linha = e.target.closest(".msg");
+  if (linha && e.pointerType !== "mouse") arrasto = { linha, x: e.clientX, y: e.clientY, dx: 0 };
+});
+$("chat").addEventListener("pointermove", (e) => {
+  if (!arrasto) return;
+  const dx = e.clientX - arrasto.x;
+  if (Math.abs(e.clientY - arrasto.y) > 30) { soltar(); return; } // está rolando o chat, não arrastando
+  arrasto.dx = Math.max(0, Math.min(80, dx));
+  arrasto.linha.style.transform = `translateX(${arrasto.dx}px)`;
+});
+function soltar() {
+  if (!arrasto) return;
+  const { linha, dx } = arrasto;
+  arrasto = null;
+  linha.style.transform = "";
+  if (dx > 55) { try { navigator.vibrate?.(15); } catch {} responder(linha); }
+}
+$("chat").addEventListener("pointerup", soltar);
+$("chat").addEventListener("pointercancel", soltar);
+
+// ---------- Tela acesa e janelinha flutuante ----------
+let trava = null;
+async function manterTelaAcesa(sim) {
+  window.Matine?.tocando?.(sim); // app Android: decide se vira janelinha ao sair
+  try {
+    if (sim && !trava && navigator.wakeLock && !document.hidden) {
+      trava = await navigator.wakeLock.request("screen");
+      trava.addEventListener("release", () => { trava = null; });
+    } else if (!sim && trava) { await trava.release(); trava = null; }
+  } catch {} // sem suporte ou bateria fraca: só não segura a tela
+}
+video.addEventListener("playing", () => manterTelaAcesa(true));
+video.addEventListener("pause", () => manterTelaAcesa(false));
+video.addEventListener("ended", () => manterTelaAcesa(false));
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !video.paused) manterTelaAcesa(true); });
+
+const temPip = document.pictureInPictureEnabled || video.webkitSupportsPresentationMode?.("picture-in-picture");
+$("pip").hidden = !temPip;
+$("pip").addEventListener("click", async () => {
+  try {
+    if (document.pictureInPictureElement) await document.exitPictureInPicture();
+    else if (video.requestPictureInPicture) await video.requestPictureInPicture();
+    else video.webkitSetPresentationMode("picture-in-picture"); // Safari do iPhone
+  } catch { toast("A janelinha só abre com o filme carregado."); }
+});
+
+// ---------- Instalar como app (iPhone) ----------
+const noIphone = /iPhone|iPad|iPod/.test(navigator.userAgent);
+const instalado = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+if (noIphone && !instalado && !guardado("matine-dica-instalar")) {
+  $("dicaInstalar").hidden = false;
+  $("fecharDica").addEventListener("click", () => { $("dicaInstalar").hidden = true; guardar("matine-dica-instalar", "1"); });
+}
 
 // ---------- Reações ----------
 $("reacoes").innerHTML = REACOES.map((e) => `<button type="button" aria-label="Reagir ${e}">${e}</button>`).join("");

@@ -18,6 +18,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="icone.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icone-180.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -153,6 +154,21 @@
   @keyframes pop { 0% { transform: scale(1.5); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 100% { transform: scale(.92); opacity: 1 } }
   /* Capa do filme (Wikipédia) */
   .campoDrive input { width: 100%; }
+  /* Responder mensagem */
+  .msg { transition: transform .15s; touch-action: pan-y; }
+  .cita { margin: 2px 0 4px; padding: 4px 8px; border-left: 3px solid currentColor; border-radius: 8px; background: rgba(0,0,0,.15); font-size: 12px; opacity: .85; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+  .resposta { display: flex; align-items: center; gap: 8px; margin: 6px 12px 0; padding: 8px 8px 8px 12px; border-radius: 16px; background: var(--card); border-left: 3px solid var(--accent); flex: none; }
+  .resposta div { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 12px; }
+  .resposta b { color: var(--accent); }
+  .resposta span { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .resposta button, .dica button { width: 32px; height: 32px; flex: none; border: 0; border-radius: 50%; background: var(--card2); color: var(--muted); cursor: pointer; }
+  /* Janelinha */
+  .pip { position: absolute; top: calc(8px + env(safe-area-inset-top)); right: 8px; z-index: 3; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(10,7,30,.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .pip svg { width: 20px; height: 20px; }
+  /* App Android em janelinha: só o filme */
+  body.pip .side, body.pip .pip { display: none !important; }
+  body.pip .player { width: 100vw; height: 100vh; aspect-ratio: auto; padding: 0; }
+  .dica { display: flex; align-items: center; gap: 10px; max-width: 340px; padding: 10px 10px 10px 14px; border-radius: 18px; background: var(--card); color: var(--muted); font-size: 13px; text-align: left; }
   .capa { display: flex; gap: 12px; align-items: flex-start; width: 100%; max-width: 340px; padding: 10px; border-radius: 20px; background: var(--card); text-align: left; }
   .capa img { width: 72px; height: 104px; object-fit: cover; border-radius: 10px; flex: none; background: var(--card2); }
   .capa div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -187,12 +203,17 @@
     <div class="campoDrive" id="campoDrive" hidden><input type="text" id="chaveDrive" placeholder="Chave do Google Drive (AIza…)" aria-label="Chave do Google Drive" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
   </div>
   <button class="btn" id="entrar" disabled>Entrar</button>
+  <div class="dica" id="dicaInstalar" hidden>
+    <span>Para ter a Matinê como app: toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</span>
+    <button type="button" id="fecharDica" aria-label="Fechar dica">✕</button>
+  </div>
   <p class="err" id="erroInicio" role="alert"></p>
 </section>
 
 <section id="sala">
   <div class="player">
-    <video id="video" playsinline controls preload="auto"></video>
+    <video id="video" playsinline controls preload="auto" autopictureinpicture></video>
+    <button id="pip" class="pip" type="button" aria-label="Janelinha flutuante" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7h-8v6h8V7Zm2-4H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 16H3V5h18v14Z"/></svg></button>
     <div class="overlay" id="aviso"></div>
     <div id="flutuantes"></div>
     <div id="contagem" aria-live="assertive"><b id="numeroContagem">3</b><span id="textoContagem">Começando junto…</span></div>
@@ -206,6 +227,10 @@
     <div id="chat" aria-live="polite"><div class="empty">O chat da sala aparece aqui.</div></div>
     <div id="digitando"><div class="pulos"><i></i><i></i><i></i></div><span id="textoDigitando"></span></div>
     <div class="reacts" id="reacoes"></div>
+    <div id="resposta" class="resposta" hidden>
+      <div><b id="respostaNome"></b><span id="respostaTexto"></span></div>
+      <button type="button" id="cancelarResposta" aria-label="Cancelar resposta">✕</button>
+    </div>
     <form id="form" autocomplete="off">
       <input type="text" id="texto" placeholder="Mensagem para a sala" maxlength="500" enterkeyhint="send" aria-label="Mensagem">
       <button id="enviar" aria-label="Enviar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z"/></svg></button>
