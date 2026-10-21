@@ -13,6 +13,10 @@ Cada pessoa carrega o vídeo direto do link. A sala só guarda **o estado** — 
 - se estiver perto, acelera ou freia de leve (até 10%) até encostar, sem tranco;
 - só avisa a sala quando a pessoa faz algo de verdade (play, pause, pulo). Quando o vídeo está só obedecendo a sala, nada volta — é isso que evita o "eco" de comandos.
 
+Quando a sala está pausada e alguém dá play, todo mundo vê uma contagem 3, 2, 1 e o filme começa no mesmo instante para todos.
+
+Ao abrir a sala, a Matinê busca a capa e um resumo do filme na Wikipédia (pelo nome digitado ou pelo nome do arquivo). Se vier o filme errado, toque em "Não é esse filme". A capa aparece no convite, na sala e no vídeo antes do play. O link mandado no WhatsApp/Instagram mostra o cartão da Matinê (a capa de cada filme não aparece ali porque o site é estático, sem servidor).
+
 Bloquear a tela ou trocar de app no celular não pausa a sala; ao voltar, o vídeo alcança os outros sozinho.
 
 ## Arquivos e links que funcionam
@@ -80,6 +84,7 @@ Abrindo o site em `localhost`, ele usa o emulador do Firebase (`firebase emulato
 | `index.html` | Telas e visual (paleta "Noite suave", a mesma da Estante e do Palavreiro) |
 | `app.js` | Sala: Firebase, player, chat, reações, convite |
 | `sync.js` | Contas da sincronia e leitura dos links (testado em `test/`) |
+| `capa.js` | Capa e resumo do filme pela Wikipédia (sem chave) |
 | `video.js` | Abre o vídeo: direto quando o aparelho toca, ou convertendo em tempo real ([Mediabunny](https://mediabunny.dev)) |
 | `config.js` | Dados do seu Firebase e chave opcional do Drive |
 | `database.rules.json` | Regras de segurança do banco |

@@ -5,7 +5,8 @@ import {
   query, limitToLast, serverTimestamp, connectDatabaseEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 import { firebaseConfig, chaveDrive } from "./config.js";
-import { esperado, correcao, ehNovidade, linkDoVideo, novoCodigo, codigoValido } from "./sync.js";
+import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo } from "./sync.js";
+import { buscarCapa } from "./capa.js";
 import { abrirVideo } from "./video.js";
 
 const $ = (id) => document.getElementById(id);
@@ -73,6 +74,7 @@ const r = (p) => ref(db, `salas/${codigo}/${p}`);
     if (snap?.exists()) {
       info = snap.val();
       $("textoInicio").innerHTML = `Você foi chamado para assistir <b style="color:var(--accent)">${esc(info.titulo || "um filme")}</b>.`;
+      cartaoCapa($("capaConvite"), info.capa);
       $("entrar").textContent = "Entrar na sala";
       $("entrar").disabled = false;
       return;
@@ -93,7 +95,7 @@ $("entrar").addEventListener("click", async () => {
   $("erroInicio").textContent = "";
   $("entrar").disabled = true;
   try {
-    if (!codigo) await criarSala($("link").value, $("titulo").value);
+    if (!codigo) await criarSala($("link").value, $("titulo").value, await novaCapa.pronta());
     await entrarNaSala();
   } catch (e) {
     $("erroInicio").textContent = e.message || "Algo deu errado. Tente de novo.";
@@ -102,14 +104,14 @@ $("entrar").addEventListener("click", async () => {
 });
 $("nome").addEventListener("keydown", (e) => { if (e.key === "Enter") $("entrar").click(); });
 
-async function criarSala(link, titulo) {
+async function criarSala(link, titulo, capa) {
   const v = linkDoVideo(link, chaveDrive);
   if (v.erro) throw new Error(v.erro);
   // A regra do banco não deixa sobrescrever uma sala que já existe: se o código já estiver em uso, tenta outro.
   for (let tentativa = 0; tentativa < 5; tentativa++) {
     codigo = novoCodigo();
     try {
-      await set(r("info"), { dono: uid, link: link.trim(), titulo: titulo.trim() || nomeDoArquivo(link), criada: serverTimestamp() });
+      await set(r("info"), { dono: uid, link: link.trim(), titulo: titulo.trim() || nomeDoArquivo(link), capa: capa || null, criada: serverTimestamp() });
       break;
     } catch (e) { if (tentativa === 4) throw new Error("Não consegui criar a sala. Confira as regras do banco (README)."); }
   }
@@ -118,9 +120,56 @@ async function criarSala(link, titulo) {
   info = (await get(r("info"))).val();
 }
 function nomeDoArquivo(link) {
-  try { const n = decodeURIComponent(new URL(link).pathname.split("/").pop() || ""); return n.includes(".") ? n.replace(/\.[^.]+$/, "").replace(/[._]+/g, " ") : "Filme"; }
+  try { const n = decodeURIComponent(new URL(link).pathname.split("/").pop() || ""); return (n.includes(".") && limparTitulo(n)) || "Filme"; }
   catch { return "Filme"; }
 }
+
+// ---------- Capa do filme ----------
+/** Mostra a capa em `el`. Os dados vêm do banco (escritos por quem abriu a sala): só aceita endereços da Wikipédia. */
+function cartaoCapa(el, capa, aoRecusar) {
+  const ok = capa && /^https:\/\/upload\.wikimedia\.org\//.test(capa.img) && /^https:\/\/pt\.wikipedia\.org\//.test(capa.pagina);
+  el.hidden = !ok;
+  el.replaceChildren();
+  if (!ok) return;
+  const img = Object.assign(document.createElement("img"), { src: capa.img, alt: "", loading: "lazy" });
+  const txt = document.createElement("div");
+  const t = document.createElement("b"); t.textContent = capa.titulo;
+  const p = document.createElement("p"); p.textContent = capa.resumo;
+  const fonte = document.createElement("small");
+  fonte.append("Fonte: ", Object.assign(document.createElement("a"), { href: capa.pagina, target: "_blank", rel: "noopener", textContent: "Wikipédia" }));
+  txt.append(t, p, fonte);
+  if (aoRecusar) {
+    const b = Object.assign(document.createElement("button"), { type: "button", textContent: "Não é esse filme" });
+    b.onclick = aoRecusar;
+    txt.append(b);
+  }
+  el.append(img, txt);
+}
+
+/** Busca a capa enquanto a pessoa digita o link ou o nome (espera ela parar de digitar). */
+function capaAoDigitar(campoLink, campoTitulo, el) {
+  let escolhida = null, busca = Promise.resolve(null), timer = 0, vez = 0;
+  const buscar = () => {
+    const termo = campoTitulo.value.trim() || (campoLink.value.trim() ? limparTitulo(nomeDoArquivo(campoLink.value)) : "");
+    const minha = ++vez;
+    busca = (termo && termo !== "Filme" ? buscarCapa(termo) : Promise.resolve(null)).then((c) => {
+      if (minha !== vez) return escolhida;
+      escolhida = c;
+      cartaoCapa(el, c, () => { escolhida = null; cartaoCapa(el, null); });
+      return escolhida;
+    });
+  };
+  const agendar = () => { clearTimeout(timer); timer = setTimeout(buscar, 600); };
+  campoLink.addEventListener("input", agendar);
+  campoTitulo.addEventListener("input", agendar);
+  return {
+    // Na hora de salvar: termina a busca que estava esperando a pessoa parar de digitar.
+    pronta() { if (timer) { clearTimeout(timer); timer = 0; buscar(); } return busca.then(() => escolhida); },
+    limpar() { escolhida = null; cartaoCapa(el, null); },
+  };
+}
+const novaCapa = capaAoDigitar($("link"), $("titulo"), $("capaNova"));
+const capaDaTroca = capaAoDigitar($("novoLink"), $("novoTitulo"), $("capaTroca"));
 
 // ---------- Dentro da sala ----------
 let entrouEm = 0;
@@ -155,6 +204,8 @@ function mudouInfo(novo) {
   $("tituloMini").textContent = info.titulo || "Filme";
   $("codigoMini").textContent = codigo;
   document.title = `${info.titulo || "Filme"} · Matinê`;
+  cartaoCapa($("capaFolha"), info.capa);
+  video.poster = $("capaFolha").hidden ? "" : info.capa.img;
   $("trocar").hidden = info.dono !== uid;
   if (!trocou) return;
   const v = linkDoVideo(info.link, chaveDrive);
@@ -179,6 +230,15 @@ async function carregarFilme(url) {
 function aplicar() {
   if (!estado || video.readyState < 1) return; // loadedmetadata chama de novo
   const alvo = esperado(estado, agora());
+  // Play com contagem: todo mundo espera parado no ponto certo e começa junto quando o relógio chegar.
+  if (emContagem(estado, agora())) {
+    video.playbackRate = 1;
+    if (!video.paused) video.pause();
+    if (Math.abs(video.currentTime - alvo) > 0.3) irPara(alvo);
+    mostrarContagem();
+    return;
+  }
+  esconderContagem();
   if (!estado.tocando) {
     video.playbackRate = 1;
     if (!video.paused) video.pause();
@@ -196,21 +256,33 @@ function aplicar() {
 // (link sem suporte a pulo cai no 0 — e mandar esse 0 para a sala jogaria todo mundo para o começo).
 let pulando = false;
 function irPara(t) { pulando = true; video.currentTime = t; }
-function enviar(tocando) {
-  const s = { tocando, pos: video.currentTime, em: serverTimestamp(), por: uid };
-  estado = { ...s, em: agora() }; // já vale aqui, antes da volta do servidor
+/** `daquiA` (ms): o estado só começa a valer depois desse tempo — é a contagem 3, 2, 1. */
+function enviar(tocando, daquiA = 0) {
+  const em = daquiA ? agora() + daquiA : serverTimestamp();
+  const s = { tocando, pos: video.currentTime, em, por: uid };
+  estado = { ...s, em: daquiA ? em : agora() }; // já vale aqui, antes da volta do servidor
   set(r("estado"), s).catch(() => toast("Não consegui avisar a sala."));
+  aplicar();
 }
 
 video.addEventListener("loadedmetadata", aplicar);
-video.addEventListener("play", () => { if (estado && ehNovidade(estado, true, video.currentTime, agora())) enviar(true); });
+video.addEventListener("play", () => {
+  if (!estado) return;
+  if (emContagem(estado, agora())) { video.pause(); return; } // já está contando: espera o "já"
+  if (!ehNovidade(estado, true, video.currentTime, agora())) return;
+  // Sala parada e alguém deu play: conta 3, 2, 1 para todos. Sala já tocando (ex.: voltei de uma travada): só alcança.
+  if (!estado.tocando) enviar(true, 3000);
+  else enviar(true);
+});
 video.addEventListener("pause", () => {
   // Tela bloqueada ou app trocado: o sistema pausa sozinho, isso não pausa a sala.
   if (document.hidden || video.readyState < 1) return;
+  if (estado && emContagem(estado, agora())) return; // pausa da própria contagem
   if (estado && ehNovidade(estado, false, video.currentTime, agora())) enviar(false);
 });
 video.addEventListener("seeked", () => {
   if (pulando) { pulando = false; return; }
+  if (estado && emContagem(estado, agora())) { aplicar(); return; } // mexer na barra durante a contagem não vale
   if (estado && ehNovidade(estado, !video.paused, video.currentTime, agora())) enviar(!video.paused);
 });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) aplicar(); });
@@ -231,6 +303,32 @@ video.addEventListener("error", () => {
   }[video.error?.code] || "Não consegui tocar o vídeo.";
   avisar(motivo, "Tentar de novo", () => { const v = linkDoVideo(info?.link, chaveDrive); if (v.url) carregarFilme(v.url); });
 });
+
+// ---------- Contagem 3, 2, 1 ----------
+let contagemTimer = 0, numeroMostrado = 0;
+function mostrarContagem() {
+  const quem = estado.por === uid ? "" : pessoas[estado.por]?.nome;
+  $("textoContagem").textContent = quem ? `${quem} deu o play` : "Começando junto…";
+  $("contagem").classList.add("on");
+  if (contagemTimer) return;
+  numeroMostrado = 0;
+  contagemTimer = setInterval(() => {
+    const falta = estado.em - agora();
+    if (falta <= 0) { esconderContagem(); aplicar(); return; }
+    const n = Math.min(3, Math.ceil(falta / 1000));
+    if (n === numeroMostrado) return;
+    numeroMostrado = n;
+    const b = $("numeroContagem");
+    b.textContent = n;
+    b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop");
+    try { navigator.vibrate?.(30); } catch {}
+  }, 50);
+}
+function esconderContagem() {
+  clearInterval(contagemTimer);
+  contagemTimer = 0;
+  $("contagem").classList.remove("on");
+}
 
 function avisar(texto, botao, acao) {
   const a = $("aviso");
@@ -332,10 +430,10 @@ $("salvarFilme").addEventListener("click", async () => {
   if (v.erro) { $("erroTroca").textContent = v.erro; return; }
   $("erroTroca").textContent = "";
   try {
-    await update(r("info"), { link: link.trim(), titulo: $("novoTitulo").value.trim() || nomeDoArquivo(link) });
+    await update(r("info"), { link: link.trim(), titulo: $("novoTitulo").value.trim() || nomeDoArquivo(link), capa: (await capaDaTroca.pronta()) || null });
     await set(r("estado"), { tocando: false, pos: 0, em: serverTimestamp(), por: uid });
     $("folha").classList.remove("show");
-    $("novoLink").value = ""; $("novoTitulo").value = "";
+    $("novoLink").value = ""; $("novoTitulo").value = ""; capaDaTroca.limpar();
   } catch { $("erroTroca").textContent = "Não consegui trocar o filme."; }
 });
 

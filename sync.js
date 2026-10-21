@@ -7,6 +7,9 @@ export function esperado(estado, agora) {
   return estado.pos + passou;
 }
 
+/** A sala mandou tocar, mas o "já" ainda não chegou (contagem 3, 2, 1 rolando). */
+export const emContagem = (estado, agora) => !!estado?.tocando && estado.em > agora;
+
 /**
  * O que fazer com o vídeo local para alcançar a sala.
  * `diff` = posição local − posição esperada (segundos).
@@ -69,3 +72,11 @@ export function novoCodigo(aleatorio = Math.random) {
 }
 
 export const codigoValido = (c) => /^[A-HJ-NP-Z2-9]{6}$/.test(c);
+
+/** Nome de arquivo vira título para buscar a capa: "Interstellar.2014.1080p.BluRay.x264" → "Interstellar". */
+export function limparTitulo(nome) {
+  let t = String(nome).replace(/\.[a-z0-9]{2,4}$/i, "").replace(/[._]+/g, " ");
+  t = t.replace(/[\[(].*$/, ""); // "(2014)", "[YTS]"...
+  t = t.split(/\s(?:19\d\d|20\d\d|480p|720p|1080p|2160p|4k|bluray|blu-ray|brrip|web-?dl|webrip|hdrip|dvdrip|x264|x265|h264|h265|hevc|dual|dublado|legendado|nacional)\b/i)[0];
+  return t.replace(/\s+/g, " ").trim();
+}

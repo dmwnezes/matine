@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { esperado, correcao, ehNovidade, linkDoVideo, novoCodigo, codigoValido } from "../sync.js";
+import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo } from "../sync.js";
 
 test("posição esperada anda com o relógio só quando está tocando", () => {
   assert.equal(esperado({ tocando: true, pos: 10, em: 1000 }, 4000), 13);
@@ -42,4 +42,19 @@ test("código da sala", () => {
   for (let i = 0; i < 200; i++) assert.ok(codigoValido(novoCodigo()));
   assert.equal(codigoValido("ABC12O"), false); // O e 1 não existem
   assert.equal(codigoValido("abcdef"), false);
+});
+
+test("contagem: tocando com o 'já' no futuro", () => {
+  assert.equal(emContagem({ tocando: true, pos: 5, em: 3000 }, 1000), true);
+  assert.equal(esperado({ tocando: true, pos: 5, em: 3000 }, 1000), 5); // parado no ponto até o "já"
+  assert.equal(emContagem({ tocando: true, pos: 5, em: 3000 }, 3000), false);
+  assert.equal(emContagem({ tocando: false, pos: 5, em: 3000 }, 1000), false);
+  assert.equal(emContagem(null, 0), false);
+});
+
+test("título limpo a partir do nome do arquivo", () => {
+  assert.equal(limparTitulo("Interstellar.2014.1080p.BluRay.x264.mkv"), "Interstellar");
+  assert.equal(limparTitulo("Cidade_de_Deus_DUBLADO.mp4"), "Cidade de Deus");
+  assert.equal(limparTitulo("Divertida Mente 2 (2024) [WEB-DL].mp4"), "Divertida Mente 2");
+  assert.equal(limparTitulo("filme"), "filme");
 });
