@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Abertura do app: o ingresso do ícone sem o canhoto (o play fica recortado). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp" android:height="100dp"
+    android:viewportWidth="100" android:viewportHeight="100">
+    <path android:fillType="evenOdd" android:fillColor="#E6C14F"
+        android:pathData="M14,30Q14,24 20,24H65V76H20Q14,76 14,70V59A9,9 0,0 0,14 41Z M33,38V62L53,50Z" />
+</vector>

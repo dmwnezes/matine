@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Abertura do app: o canhoto do ingresso, que se solta pelo picote. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp" android:height="100dp"
+    android:viewportWidth="100" android:viewportHeight="100">
+    <path android:fillColor="#E6C14F"
+        android:pathData="M67,24H80Q86,24 86,30V41A9,9 0,0 0,86 59V70Q86,76 80,76H67Z" />
+    <path android:fillColor="#B8962F"
+        android:pathData="M67,26h1.6v4h-1.6z M67,34h1.6v4h-1.6z M67,42h1.6v4h-1.6z M67,50h1.6v4h-1.6z M67,58h1.6v4h-1.6z M67,66h1.6v4h-1.6z" />
+</vector>

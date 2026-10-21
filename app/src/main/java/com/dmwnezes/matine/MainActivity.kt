@@ -46,6 +46,7 @@ class MainActivity : Activity() {
     /** O site avisa quando o filme está tocando: só aí vale virar janelinha ao sair do app. */
     @Volatile private var tocando = false
     private lateinit var tv: Tv
+    private var abertura: Abertura? = null
     private lateinit var atualizacao: Atualizacao
     private val audio by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
 
@@ -66,6 +67,7 @@ class MainActivity : Activity() {
         }
         raiz = FrameLayout(this).apply { addView(web, ViewGroup.LayoutParams(-1, -1)) }
         setContentView(raiz)
+        if (savedInstanceState == null) abertura = Abertura(raiz)
         respeitarBarrasETeclado()
 
         tv = Tv(this) { codigo -> runOnUiThread { web.evaluateJavascript("window.$codigo", null) } }
@@ -183,6 +185,8 @@ class MainActivity : Activity() {
     }
 
     private inner class Cliente : WebViewClient() {
+        override fun onPageFinished(view: WebView, url: String) { abertura?.siteCarregou() }
+
         override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean {
             val url = req.url.toString()
             if (ehDoSite(url)) return false
