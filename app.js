@@ -4,7 +4,7 @@ import {
   getDatabase, ref, get, set, update, push, onValue, onChildAdded, onDisconnect,
   query, limitToLast, serverTimestamp, connectDatabaseEmulator,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
-import { firebaseConfig, chaveDrive } from "./config.js";
+import { firebaseConfig } from "./config.js";
 import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo, chaveValida, lerHash, montarHash } from "./sync.js";
 import { buscarCapa } from "./capa.js";
 import { abrirVideo } from "./video.js";
@@ -55,6 +55,15 @@ const doLink = lerHash(location.hash);
 // A chave vem do convite ou fica guardada neste aparelho depois da primeira vez.
 let chave = local ? "teste" : doLink.chave || guardado("matine-chave");
 if (doLink.chave) guardar("matine-chave", doLink.chave);
+
+// Chave do Google Drive: quem abre a sala cola uma vez (fica neste aparelho) e ela vai junto na sala.
+let minhaChaveDrive = guardado("matine-chave-drive");
+const chaveDrive = () => info?.chaveDrive || minhaChaveDrive;
+/** Lê a chave do Drive digitada (se tiver) antes de validar um link. */
+function lerChaveDrive(campo) {
+  const k = campo.value.trim();
+  if (chaveValida(k)) { minhaChaveDrive = k; guardar("matine-chave-drive", k); campo.closest(".filme").querySelector(".campoDrive").hidden = true; }
+}
 
 let db, auth, offset = 0;
 const agora = () => Date.now() + offset;
@@ -133,13 +142,15 @@ $("entrar").addEventListener("click", async () => {
 $("nome").addEventListener("keydown", (e) => { if (e.key === "Enter") $("entrar").click(); });
 
 async function criarSala(link, titulo, capa) {
-  const v = linkDoVideo(link, chaveDrive);
+  lerChaveDrive($("chaveDrive"));
+  const v = linkDoVideo(link, minhaChaveDrive);
+  if (v.semChaveDrive) $("campoDrive").hidden = false;
   if (v.erro) throw new Error(v.erro);
   // A regra do banco não deixa sobrescrever uma sala que já existe: se o código já estiver em uso, tenta outro.
   for (let tentativa = 0; tentativa < 5; tentativa++) {
     codigo = novoCodigo();
     try {
-      await set(r("info"), { dono: uid, link: link.trim(), titulo: titulo.trim() || nomeDoArquivo(link), capa: capa || null, criada: serverTimestamp() });
+      await set(r("info"), { dono: uid, link: link.trim(), titulo: titulo.trim() || nomeDoArquivo(link), capa: capa || null, chaveDrive: v.drive ? minhaChaveDrive : null, criada: serverTimestamp() });
       break;
     } catch (e) { if (tentativa === 4) throw new Error("Não consegui criar a sala. Confira as regras do banco (README)."); }
   }
@@ -236,7 +247,7 @@ function mudouInfo(novo) {
   video.poster = $("capaFolha").hidden ? "" : info.capa.img;
   $("trocar").hidden = info.dono !== uid;
   if (!trocou) return;
-  const v = linkDoVideo(info.link, chaveDrive);
+  const v = linkDoVideo(info.link, chaveDrive());
   if (v.erro) { avisar(v.erro); return; }
   carregarFilme(v.url);
 }
@@ -329,7 +340,7 @@ video.addEventListener("error", () => {
     3: "O arquivo veio com defeito.",
     4: "Não consegui abrir esse vídeo. O link pode ser privado, ter passado do limite de downloads do Google Drive ou estar num formato que este aparelho não toca.",
   }[video.error?.code] || "Não consegui tocar o vídeo.";
-  avisar(motivo, "Tentar de novo", () => { const v = linkDoVideo(info?.link, chaveDrive); if (v.url) carregarFilme(v.url); });
+  avisar(motivo, "Tentar de novo", () => { const v = linkDoVideo(info?.link, chaveDrive()); if (v.url) carregarFilme(v.url); });
 });
 
 // ---------- Contagem 3, 2, 1 ----------
@@ -454,11 +465,13 @@ $("convidar").addEventListener("click", async () => {
 $("trocar").addEventListener("click", () => { $("trocaFilme").hidden = false; $("novoLink").focus(); });
 $("salvarFilme").addEventListener("click", async () => {
   const link = $("novoLink").value;
-  const v = linkDoVideo(link, chaveDrive);
+  lerChaveDrive($("novaChaveDrive"));
+  const v = linkDoVideo(link, minhaChaveDrive);
+  if (v.semChaveDrive) $("campoDriveTroca").hidden = false;
   if (v.erro) { $("erroTroca").textContent = v.erro; return; }
   $("erroTroca").textContent = "";
   try {
-    await update(r("info"), { link: link.trim(), titulo: $("novoTitulo").value.trim() || nomeDoArquivo(link), capa: (await capaDaTroca.pronta()) || null });
+    await update(r("info"), { link: link.trim(), titulo: $("novoTitulo").value.trim() || nomeDoArquivo(link), capa: (await capaDaTroca.pronta()) || null, chaveDrive: v.drive ? minhaChaveDrive : null });
     await set(r("estado"), { tocando: false, pos: 0, em: serverTimestamp(), por: uid });
     $("folha").classList.remove("show");
     $("novoLink").value = ""; $("novoTitulo").value = ""; capaDaTroca.limpar();

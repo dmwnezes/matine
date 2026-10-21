@@ -35,7 +35,7 @@ Limites:
 **Links:**
 - Link direto do arquivo.
 - Dropbox (o link de compartilhar é convertido sozinho).
-- Google Drive, se a chave do Google estiver no `config.js` (passo 4) e o arquivo estiver compartilhado como "qualquer pessoa com o link". O Google pode bloquear arquivos muito baixados ("limite de downloads"); aí a sala avisa que não conseguiu abrir.
+- Google Drive, com a chave do Google Drive (passo 4) e o arquivo estiver compartilhado como "qualquer pessoa com o link". O Google pode bloquear arquivos muito baixados ("limite de downloads"); aí a sala avisa que não conseguiu abrir.
 - YouTube **não** funciona (o YouTube não deixa tocar fora do player dele).
 
 ## Configurar (uma vez só)
@@ -67,7 +67,7 @@ Abra o site, escreva seu nome, cole o link de um vídeo e toque em **Abrir sala*
 1. Em [console.cloud.google.com](https://console.cloud.google.com), escolha o projeto **matine** (o Firebase criou) > **APIs e serviços > Biblioteca** > **Google Drive API** > **Ativar**.
 2. **APIs e serviços > Credenciais > Criar credenciais > Chave de API**.
 3. Edite a chave: em **Restrições de aplicativo**, escolha **Sites** e adicione `https://dmwnezes.com/*`; em **Restrições de API**, escolha só **Google Drive API**. Salve.
-4. Cole a chave em `chaveDrive` no `config.js`.
+4. Na primeira vez que você abrir uma sala com link do Drive, o site pede essa chave (só uma vez). Ela fica no aparelho e vai junto na sala para os convidados.
 
 ## Testar no computador
 

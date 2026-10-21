@@ -152,6 +152,7 @@
   #contagem span { margin-top: 14px; color: #fff; font-size: 14px; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
   @keyframes pop { 0% { transform: scale(1.5); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 100% { transform: scale(.92); opacity: 1 } }
   /* Capa do filme (Wikipédia) */
+  .campoDrive input { width: 100%; }
   .capa { display: flex; gap: 12px; align-items: flex-start; width: 100%; max-width: 340px; padding: 10px; border-radius: 20px; background: var(--card); text-align: left; }
   .capa img { width: 72px; height: 104px; object-fit: cover; border-radius: 10px; flex: none; background: var(--card2); }
   .capa div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -183,6 +184,7 @@
     <input type="url" id="link" placeholder="Link do vídeo (.mp4, Drive, Dropbox…)" aria-label="Link do vídeo" inputmode="url" autocomplete="off">
     <input type="text" id="titulo" placeholder="Nome do filme (opcional)" maxlength="80" aria-label="Nome do filme">
     <div class="capa" id="capaNova" hidden></div>
+    <div class="campoDrive" id="campoDrive" hidden><input type="text" id="chaveDrive" placeholder="Chave do Google Drive (AIza…)" aria-label="Chave do Google Drive" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
   </div>
   <button class="btn" id="entrar" disabled>Entrar</button>
   <p class="err" id="erroInicio" role="alert"></p>
@@ -226,6 +228,7 @@
       <input type="url" id="novoLink" placeholder="Link do novo vídeo" aria-label="Link do novo vídeo" inputmode="url" autocomplete="off">
       <input type="text" id="novoTitulo" placeholder="Nome do filme (opcional)" maxlength="80" aria-label="Nome do novo filme">
       <div class="capa" id="capaTroca" hidden></div>
+      <div class="campoDrive" id="campoDriveTroca" hidden><input type="text" id="novaChaveDrive" placeholder="Chave do Google Drive (AIza…)" aria-label="Chave do Google Drive" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
       <button class="btn" id="salvarFilme" type="button">Passar este</button>
       <p class="err" id="erroTroca" role="alert"></p>
     </div>

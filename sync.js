@@ -50,7 +50,7 @@ export function linkDoVideo(texto, chaveDrive) {
   if (host === "drive.google.com" || host === "docs.google.com") {
     const id = u.pathname.match(/\/d\/([\w-]{10,})/)?.[1] || u.searchParams.get("id");
     if (!id) return { erro: "Não achei o arquivo nesse link do Drive." };
-    if (!chaveDrive) return { erro: "Links do Drive precisam da chave do Google no config.js." };
+    if (!chaveDrive) return { erro: "Para links do Google Drive, cole a chave do Google Drive (só uma vez).", semChaveDrive: true };
     return { url: `https://www.googleapis.com/drive/v3/files/${id}?alt=media&supportsAllDrives=true&key=${encodeURIComponent(chaveDrive)}`, drive: id };
   }
 

@@ -8,5 +8,5 @@ export const firebaseConfig = {
   appId: "1:204385581159:web:3a3f5740b2d01fa01b3cc2",
 };
 
-// Opcional: chave do Google para tocar links do Google Drive (README, passo 4). Vazio = links do Drive desligados.
-export const chaveDrive = "AIzaSyD3dpL49NNV6T0FQSGAuOviontjGJ06b-U";
+// A chave do Google Drive também não fica aqui: o site pede uma vez quando alguém cola um link do Drive
+// e ela vai junto na sala para os convidados.
