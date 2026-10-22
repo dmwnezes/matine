@@ -12,3 +12,7 @@ export const firebaseConfig = {
 // Vazias = o site pede cada uma uma vez e leva no convite.
 export const chaveFirebase = "AIzaSyBaOVrcCVxUwucD1kmU0edUcLeZIVNehFE";
 export const chaveDriveFixa = "AIzaSyD3dpL49NNV6T0FQSGAuOviontjGJ06b-U";
+
+// Chave do TMDB (themoviedb.org) para nome, capa e sinopse dos filmes — a mesma usada na Estante.
+// Vazia = os filmes ficam sem capa (o resto funciona igual).
+export const chaveTmdb = "";

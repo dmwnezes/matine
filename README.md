@@ -15,7 +15,7 @@ Cada pessoa carrega o vídeo direto do link. A sala só guarda **o estado** — 
 
 Quando a sala está pausada e alguém dá play, todo mundo vê uma contagem 3, 2, 1 e o filme começa no mesmo instante para todos.
 
-Ao guardar um filme, a Matinê busca o nome e a capa no IMDb (pelo nome digitado ou pelo nome do arquivo; o ano no nome do arquivo ajuda a escolher o filme certo). Sem nome digitado, o filme fica com o nome do IMDb. Se vier o filme errado, toque em "Não é esse filme" para ver o próximo resultado. A capa aparece no convite, na sala e no vídeo antes do play. O link mandado no WhatsApp/Instagram mostra o cartão da Matinê (a capa de cada filme não aparece ali porque o site é estático, sem servidor).
+Ao guardar um filme, a Matinê busca o nome, a capa e a sinopse em português no TMDB (themoviedb.org, o mesmo da Estante), pelo nome digitado ou pelo nome do arquivo; o ano no nome do arquivo ajuda a escolher o filme certo. Sem nome digitado, o filme fica com o nome do TMDB. Precisa da chave grátis do TMDB em `chaveTmdb`, no `config.js`. Se vier o filme errado, toque em "Não é esse filme" para ver o próximo resultado. A capa aparece no convite, na sala e no vídeo antes do play. O link mandado no WhatsApp/Instagram mostra o cartão da Matinê (a capa de cada filme não aparece ali porque o site é estático, sem servidor).
 
 **Lista "Para ver depois":** a tela inicial é uma lista compartilhada de filmes. O **+** abre uma gaveta: cole o link (o mesmo tipo de link de sempre), veja a capa e toque em **Guardar** ou **Assistir agora**. O filme mais antigo ainda não visto vira a **Próxima sessão**, com o botão **Abrir sala**; os outros ficam na fileira de baixo. A aba **Já vimos** guarda o histórico: o filme vai para lá sozinho quando a sala passa de 92% dele (filmes com mais de 10 min), ou pelo botão **Já vimos** nos detalhes. Quem entra numa sala aberta pela lista passa a ver e adicionar na mesma lista (o que essa pessoa tinha numa lista própria vai junto); o botão **Compartilhar a lista** manda um link direto para ela. A lista fica no banco em `listas/<código>`; o código tem 16 letras e números e só quem o recebe consegue ler a lista.
 
@@ -99,7 +99,7 @@ Abrindo o site em `localhost`, ele usa o emulador do Firebase (`firebase emulato
 | `index.html` | Telas e visual (paleta "Noite suave", a mesma da Estante e do Palavreiro) |
 | `app.js` | Sala: Firebase, player, chat, reações, convite |
 | `sync.js` | Contas da sincronia e leitura dos links (testado em `test/`) |
-| `capa.js` | Nome e capa do filme pelo IMDb (busca do próprio IMDb, sem chave) |
+| `capa.js` | Nome, capa e sinopse do filme pelo TMDB (chave `chaveTmdb` no `config.js`) |
 | `video.js` | Abre o vídeo: direto quando o aparelho toca, ou convertendo em tempo real ([Mediabunny](https://mediabunny.dev)) |
 | `embed.js` | YouTube e Vimeo embutidos, fingindo ser o `<video>` para a sincronia e os controles |
 | `config.js` | Dados do seu Firebase e chave opcional do Drive |

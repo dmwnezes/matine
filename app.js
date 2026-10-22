@@ -209,7 +209,7 @@ async function abrirCasa() {
 
 const CORES_CAPA = [["#3b2a7a", "#e5737a"], ["#16405b", "#5fb8a3"], ["#2b2140", "#e6c14f"], ["#3a1f4f", "#9b8cff"], ["#1d3a2a", "#5fb873"], ["#4a2a1a", "#e8836b"]];
 const capaOk = capaValida;
-/** Capa do filme (do IMDb) ou, sem capa, um cartaz com a inicial do título. */
+/** Capa do filme (do TMDB) ou, sem capa, um cartaz com a inicial do título. */
 function poster(f) {
   const el = document.createElement("div");
   el.className = "poster";
@@ -346,7 +346,7 @@ $("codigoCasa").addEventListener("keydown", (e) => { if (e.key === "Enter") $("i
 $("codigoDigitado").addEventListener("keydown", (e) => { if (e.key === "Enter") entrarComCodigo(); });
 
 // ---------- Capa do filme ----------
-/** Mostra a capa em `el`. Os dados vêm do banco (escritos por quem abriu a sala): só aceita endereços do IMDb/Wikipédia. */
+/** Mostra a capa em `el`. Os dados vêm do banco (escritos por quem abriu a sala): só aceita endereços do TMDB/IMDb/Wikipédia. */
 function cartaoCapa(el, capa, aoRecusar) {
   const ok = capaValida(capa);
   el.hidden = !ok;
@@ -357,7 +357,7 @@ function cartaoCapa(el, capa, aoRecusar) {
   const t = document.createElement("b"); t.textContent = capa.titulo;
   const p = document.createElement("p"); p.textContent = capa.resumo;
   const fonte = document.createElement("small");
-  fonte.append("Fonte: ", Object.assign(document.createElement("a"), { href: capa.pagina, target: "_blank", rel: "noopener", textContent: capa.pagina.includes("imdb.com") ? "IMDb" : "Wikipédia" }));
+  fonte.append("Fonte: ", Object.assign(document.createElement("a"), { href: capa.pagina, target: "_blank", rel: "noopener", textContent: capa.pagina.includes("themoviedb.org") ? "TMDB" : capa.pagina.includes("imdb.com") ? "IMDb" : "Wikipédia" }));
   txt.append(t, p, fonte);
   if (aoRecusar) {
     const b = Object.assign(document.createElement("button"), { type: "button", textContent: "Não é esse filme" });
@@ -370,7 +370,7 @@ function cartaoCapa(el, capa, aoRecusar) {
 /** Busca a capa enquanto a pessoa digita o link ou o nome (espera ela parar de digitar). */
 function capaAoDigitar(campoLink, campoTitulo, el) {
   let escolhida = null, busca = Promise.resolve(null), timer = 0, vez = 0;
-  // "Não é esse filme" mostra o próximo candidato do IMDb; acabou a lista, fica sem capa.
+  // "Não é esse filme" mostra o próximo candidato do TMDB; acabou a lista, fica sem capa.
   const mostrar = (lista, i) => {
     escolhida = lista[i] || null;
     cartaoCapa(el, escolhida, () => mostrar(lista, i + 1));
