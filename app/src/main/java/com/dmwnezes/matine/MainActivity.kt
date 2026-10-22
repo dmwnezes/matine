@@ -18,6 +18,7 @@ import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -161,8 +162,31 @@ class MainActivity : Activity() {
     }
 
     /** Botão de tela cheia do player do site. */
+    /** Foto do chat: o WebView não abre a galeria sozinho, o app abre e devolve o arquivo para o site. */
+    private var escolhaDeArquivo: ValueCallback<Array<Uri>>? = null
+    private val PEDIDO_ARQUIVO = 7
+
+    @Deprecated("Activity simples, sem AndroidX Activity Result API.")
+    override fun onActivityResult(pedido: Int, resultado: Int, dados: Intent?) {
+        if (pedido != PEDIDO_ARQUIVO) { @Suppress("DEPRECATION") super.onActivityResult(pedido, resultado, dados); return }
+        escolhaDeArquivo?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultado, dados))
+        escolhaDeArquivo = null
+    }
+
     private inner class Cromo : WebChromeClient() {
         private var aoSair: CustomViewCallback? = null
+
+        override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
+            escolhaDeArquivo?.onReceiveValue(null) // uma escolha antiga sem resposta: libera o site
+            escolhaDeArquivo = callback
+            return try {
+                @Suppress("DEPRECATION") startActivityForResult(params.createIntent(), PEDIDO_ARQUIVO)
+                true
+            } catch (e: Exception) {
+                escolhaDeArquivo = null
+                false
+            }
+        }
 
         override fun onShowCustomView(view: View, callback: CustomViewCallback) {
             if (telaCheia != null) { callback.onCustomViewHidden(); return }
