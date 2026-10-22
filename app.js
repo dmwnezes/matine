@@ -6,7 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 import { firebaseConfig, chaveFirebase, chaveDriveFixa } from "./config.js";
 import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo, chaveValida, lerHash, montarHash } from "./sync.js";
-import { buscarCapa } from "./capa.js";
+import { buscarCapa, capaValida, anoDoNome } from "./capa.js";
 import { abrirVideo } from "./video.js";
 import { iniciarControles } from "./controles.js";
 import { iniciarBrotos, comandoBrotos } from "./brotos.js";
@@ -208,8 +208,8 @@ async function abrirCasa() {
 }
 
 const CORES_CAPA = [["#3b2a7a", "#e5737a"], ["#16405b", "#5fb8a3"], ["#2b2140", "#e6c14f"], ["#3a1f4f", "#9b8cff"], ["#1d3a2a", "#5fb873"], ["#4a2a1a", "#e8836b"]];
-const capaOk = (c) => !!c && /^https:\/\/upload\.wikimedia\.org\//.test(c.img || "") && /^https:\/\/pt\.wikipedia\.org\//.test(c.pagina || "");
-/** Capa do filme (da Wikipédia) ou, sem capa, um cartaz com a inicial do título. */
+const capaOk = capaValida;
+/** Capa do filme (do IMDb) ou, sem capa, um cartaz com a inicial do título. */
 function poster(f) {
   const el = document.createElement("div");
   el.className = "poster";
@@ -314,7 +314,8 @@ async function guardarNovo() {
   if (v.erro) { $("erroNovo").textContent = v.erro; return null; }
   if (jaNaFila(filmes, link)) { $("erroNovo").textContent = "Esse filme já está na lista."; return null; }
   $("erroNovo").textContent = "";
-  const f = { link, titulo: ($("titulo").value.trim() || nomeDoArquivo(link)).slice(0, 120), capa: (await novaCapa.pronta()) || null, nome: meuNome || null, por: uid, em: serverTimestamp() };
+  const capa = (await novaCapa.pronta()) || null;
+  const f = { link, titulo: ($("titulo").value.trim() || capa?.titulo || nomeDoArquivo(link)).slice(0, 120), capa, nome: meuNome || null, por: uid, em: serverTimestamp() };
   try {
     const novo = await push(fl(), f);
     $("link").value = ""; $("titulo").value = ""; novaCapa.limpar();
@@ -345,9 +346,9 @@ $("codigoCasa").addEventListener("keydown", (e) => { if (e.key === "Enter") $("i
 $("codigoDigitado").addEventListener("keydown", (e) => { if (e.key === "Enter") entrarComCodigo(); });
 
 // ---------- Capa do filme ----------
-/** Mostra a capa em `el`. Os dados vêm do banco (escritos por quem abriu a sala): só aceita endereços da Wikipédia. */
+/** Mostra a capa em `el`. Os dados vêm do banco (escritos por quem abriu a sala): só aceita endereços do IMDb/Wikipédia. */
 function cartaoCapa(el, capa, aoRecusar) {
-  const ok = capa && /^https:\/\/upload\.wikimedia\.org\//.test(capa.img) && /^https:\/\/pt\.wikipedia\.org\//.test(capa.pagina);
+  const ok = capaValida(capa);
   el.hidden = !ok;
   el.replaceChildren();
   if (!ok) return;
@@ -356,7 +357,7 @@ function cartaoCapa(el, capa, aoRecusar) {
   const t = document.createElement("b"); t.textContent = capa.titulo;
   const p = document.createElement("p"); p.textContent = capa.resumo;
   const fonte = document.createElement("small");
-  fonte.append("Fonte: ", Object.assign(document.createElement("a"), { href: capa.pagina, target: "_blank", rel: "noopener", textContent: "Wikipédia" }));
+  fonte.append("Fonte: ", Object.assign(document.createElement("a"), { href: capa.pagina, target: "_blank", rel: "noopener", textContent: capa.pagina.includes("imdb.com") ? "IMDb" : "Wikipédia" }));
   txt.append(t, p, fonte);
   if (aoRecusar) {
     const b = Object.assign(document.createElement("button"), { type: "button", textContent: "Não é esse filme" });
@@ -369,13 +370,19 @@ function cartaoCapa(el, capa, aoRecusar) {
 /** Busca a capa enquanto a pessoa digita o link ou o nome (espera ela parar de digitar). */
 function capaAoDigitar(campoLink, campoTitulo, el) {
   let escolhida = null, busca = Promise.resolve(null), timer = 0, vez = 0;
+  // "Não é esse filme" mostra o próximo candidato do IMDb; acabou a lista, fica sem capa.
+  const mostrar = (lista, i) => {
+    escolhida = lista[i] || null;
+    cartaoCapa(el, escolhida, () => mostrar(lista, i + 1));
+  };
   const buscar = () => {
-    const termo = campoTitulo.value.trim() || (campoLink.value.trim() ? limparTitulo(nomeDoArquivo(campoLink.value)) : "");
+    const nome = campoLink.value.trim() ? nomeDoArquivo(campoLink.value) : "";
+    const termo = campoTitulo.value.trim() || (nome ? limparTitulo(nome) : "");
     const minha = ++vez;
-    busca = (termo && termo !== "Filme" ? buscarCapa(termo) : Promise.resolve(null)).then((c) => {
+    let bruto = ""; try { bruto = decodeURIComponent(new URL(campoLink.value.trim()).pathname.split("/").pop() || ""); } catch {}
+    busca = (termo && termo !== "Filme" ? buscarCapa(termo, anoDoNome(bruto)) : Promise.resolve([])).then((lista) => {
       if (minha !== vez) return escolhida;
-      escolhida = c;
-      cartaoCapa(el, c, () => { escolhida = null; cartaoCapa(el, null); });
+      mostrar(lista, 0);
       return escolhida;
     });
   };
@@ -965,7 +972,8 @@ $("salvarFilme").addEventListener("click", async () => {
   if (v.erro) { $("erroTroca").textContent = v.erro; return; }
   $("erroTroca").textContent = "";
   try {
-    await update(r("info"), { link: link.trim(), titulo: $("novoTitulo").value.trim() || nomeDoArquivo(link), capa: (await capaDaTroca.pronta()) || null, chaveDrive: v.drive ? minhaChaveDrive : null });
+    const capa = (await capaDaTroca.pronta()) || null;
+    await update(r("info"), { link: link.trim(), titulo: $("novoTitulo").value.trim() || capa?.titulo || nomeDoArquivo(link), capa, chaveDrive: v.drive ? minhaChaveDrive : null });
     await set(r("estado"), { tocando: false, pos: 0, em: serverTimestamp(), por: uid });
     $("folha").classList.remove("show");
     $("novoLink").value = ""; $("novoTitulo").value = ""; capaDaTroca.limpar();
