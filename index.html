@@ -62,6 +62,58 @@
   .filme { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; }
   @media (max-height: 760px) { .marquee { display: none; } #minhaFoto { width: 64px; height: 64px; } }
 
+  /* Tela inicial: a lista compartilhada "Para ver depois" */
+  /* (embaixo sobra espaço para o botão + não cobrir o rodapé) */
+  #casa { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: calc(14px + env(safe-area-inset-top)) 0 calc(100px + env(safe-area-inset-bottom)); position: relative; }
+  .casa-topo { display: flex; align-items: center; justify-content: space-between; padding: 6px 20px; }
+  .casa-logo { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+  .casa-eu { width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: var(--card2); cursor: pointer; overflow: hidden; }
+  .casa-eu svg { width: 100%; height: 100%; display: block; }
+  .abas { display: flex; gap: 8px; padding: 10px 20px 6px; }
+  .abas button { border: 0; border-radius: 999px; padding: 8px 15px; background: var(--card); color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; }
+  .abas button.on { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .marquise { position: relative; margin: 8px 18px 0; height: 320px; border-radius: 26px; overflow: hidden; background: var(--card2) center / cover no-repeat; }
+  .marquise::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(10,7,30,.15), rgba(10,7,30,.1) 40%, rgba(10,7,30,.94)); }
+  .marquise-luzes { position: absolute; z-index: 1; top: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 7px; }
+  .marquise-luzes i { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 8px var(--yellow); animation: blink 1.6s infinite; }
+  .marquise-luzes i:nth-child(even) { animation-delay: .8s; }
+  .marquise-info { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; padding: 18px; display: flex; flex-direction: column; gap: 2px; }
+  .marquise-info small { color: var(--yellow); font-weight: 700; font-size: 12px; letter-spacing: 1px; }
+  .marquise-info b { font-size: 24px; line-height: 1.15; }
+  .marquise-info > span { color: var(--muted); font-size: 12px; }
+  .marquise-bts { display: flex; gap: 8px; margin-top: 10px; }
+  .marquise-bts .btn { padding: 11px 18px; font-size: 15px; }
+  .marquise-bts .ghost { background: rgba(255,255,255,.12); box-shadow: none; padding: 11px 16px; }
+  .poster { position: relative; display: flex; align-items: flex-end; justify-content: flex-start; border-radius: 14px; overflow: hidden; background: linear-gradient(160deg, var(--c1, #3b2a7a), var(--c2, #9b8cff)); color: #fff; }
+  .poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .poster .letra { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 800; opacity: .55; }
+  .fileira-titulo { margin: 20px 20px 10px; font-size: 15px; font-weight: 700; }
+  .fileira { display: flex; gap: 12px; padding: 0 20px 4px; overflow-x: auto; scrollbar-width: none; }
+  .fileira::-webkit-scrollbar { display: none; }
+  .item-lista { flex: none; width: 104px; border: 0; padding: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .item-lista .poster { width: 104px; height: 150px; }
+  .item-lista b { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .item-lista small { display: block; color: var(--muted); font-size: 11px; margin-top: 1px; }
+  .grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 10px 20px; }
+  .grade .item-lista, .grade .item-lista .poster { width: 100%; }
+  .grade .item-lista .poster { height: auto; aspect-ratio: 2 / 3; filter: saturate(.7); }
+  .vazio { margin: 12px 18px 0; padding: 28px 20px; border-radius: 26px; border: 1.5px dashed var(--line); text-align: center; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 14px; line-height: 1.4; }
+  .vazio > b { color: var(--text); font-size: 17px; }
+  .vazio-txt { color: var(--muted); text-align: center; font-size: 14px; padding: 30px 20px; }
+  .casa-rodape { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 20px 0; margin-top: auto; }
+  .fab { position: fixed; right: 20px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 5; width: 62px; height: 62px; border: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: 34px; line-height: 1; cursor: pointer; box-shadow: 0 10px 24px rgba(0,0,0,.5); }
+  .dialogo.gaveta { align-items: flex-end; padding: 0; }
+  .dialogo.gaveta .box { max-width: 520px; border-radius: 26px 26px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); align-items: center; }
+  .dialogo .filme input { max-width: none; }
+  .dialogo .acoes { display: flex; gap: 10px; width: 100%; }
+  .dialogo .acoes .btn { flex: 1; padding: 13px 12px; }
+  #detalhe .box { align-items: stretch; text-align: center; }
+  .det-capa { align-self: center; }
+  .det-capa .poster { width: 130px; height: 190px; }
+  .det-info { margin: -6px 0 0; color: var(--muted); font-size: 13px; }
+  .det-resumo { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; text-align: left; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  .det-resumo:empty { display: none; }
+
   /* Sala */
   #sala { display: none; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; }
   #sala.on { display: flex; position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100dvh); }
@@ -356,12 +408,6 @@
   <input type="text" id="nome" placeholder="Seu nome" maxlength="24" autocomplete="nickname" aria-label="Seu nome">
   <p class="sub">Escolha sua foto</p>
   <div class="picks" id="fotos" role="group" aria-label="Fotos de perfil"></div>
-  <div class="filme" id="campoFilme" hidden>
-    <input type="url" id="link" placeholder="Link do vídeo (.mp4, Drive, Dropbox…)" aria-label="Link do vídeo" inputmode="url" autocomplete="off">
-    <input type="text" id="titulo" placeholder="Nome do filme (opcional)" maxlength="80" aria-label="Nome do filme">
-    <div class="capa" id="capaNova" hidden></div>
-    <div class="campoDrive" id="campoDrive" hidden><input type="text" id="chaveDrive" placeholder="Chave do Google Drive (AIza…)" aria-label="Chave do Google Drive" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
-  </div>
   <button class="btn" id="entrar" disabled>Entrar</button>
   <button class="link-ajustes" id="abrirAjustes" type="button">⚙ Ajustes</button>
   <div class="com-codigo" id="comCodigo" hidden>
@@ -374,6 +420,48 @@
     <button type="button" id="fecharDica" aria-label="Fechar dica">✕</button>
   </div>
   <p class="err" id="erroInicio" role="alert"></p>
+</section>
+
+<section id="casa" hidden>
+  <header class="casa-topo">
+    <span class="casa-logo">Matinê</span>
+    <button type="button" class="casa-eu" id="casaEu" aria-label="Seu nome e foto (Ajustes)"></button>
+  </header>
+  <div class="abas" role="tablist">
+    <button type="button" role="tab" id="abaVer" class="on" aria-selected="true">Para ver</button>
+    <button type="button" role="tab" id="abaVistos" aria-selected="false">Já vimos</button>
+  </div>
+  <div id="paraVer">
+    <div class="marquise" id="marquise" hidden>
+      <div class="marquise-luzes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="marquise-info">
+        <small>PRÓXIMA SESSÃO</small>
+        <b id="proxTitulo"></b>
+        <span id="proxQuem"></span>
+        <div class="marquise-bts"><button class="btn" id="proxAbrir" type="button">▶ Abrir sala</button><button class="btn ghost" id="proxMais" type="button" aria-label="Mais opções">⋯</button></div>
+      </div>
+    </div>
+    <div class="vazio" id="vazio" hidden>
+      <b>Nenhum filme guardado ainda</b>
+      <span>Toque no <b>+</b> e cole o link de um filme. Quem estiver na lista com você vê na hora.</span>
+    </div>
+    <h3 class="fileira-titulo" id="filaTitulo" hidden>Para ver depois</h3>
+    <div class="fileira" id="fila"></div>
+  </div>
+  <div id="vistos" hidden>
+    <div class="grade" id="gradeVistos"></div>
+    <p class="vazio-txt" id="vazioVistos" hidden>Os filmes que vocês terminarem aparecem aqui.</p>
+  </div>
+  <div class="casa-rodape">
+    <button class="link-ajustes" id="compartilharLista" type="button">↗ Compartilhar a lista</button>
+    <button class="link-ajustes" id="abrirAjustesCasa" type="button">⚙ Ajustes</button>
+    <div class="com-codigo">
+      <span>Recebeu um código?</span>
+      <input type="text" id="codigoCasa" placeholder="ABC234" maxlength="6" aria-label="Código da sala" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go">
+      <button class="btn ghost" id="irCodigoCasa" type="button">Entrar</button>
+    </div>
+  </div>
+  <button class="fab" id="adicionar" type="button" aria-label="Adicionar filme pelo link">+</button>
 </section>
 
 <section id="sala">
@@ -454,6 +542,31 @@
     <button class="btn ghost aj-apagar" id="ajApagar" type="button">Apagar meus dados deste aparelho</button>
     <p class="hint">Apaga nome, foto, cores e recados abertos guardados aqui. Não apaga nada da sala.</p>
     <button class="btn" id="ajFechar" type="button">Pronto</button>
+  </div>
+</div>
+<div id="novo" class="dialogo gaveta" role="dialog" aria-modal="true" aria-labelledby="novoTitulo">
+  <div class="box">
+    <h2 id="novoTitulo">Guardar filme</h2>
+  <div class="filme" id="campoFilme">
+    <input type="url" id="link" placeholder="Link do vídeo (.mp4, Drive, Dropbox…)" aria-label="Link do vídeo" inputmode="url" autocomplete="off">
+    <input type="text" id="titulo" placeholder="Nome do filme (opcional)" maxlength="80" aria-label="Nome do filme">
+    <div class="capa" id="capaNova" hidden></div>
+    <div class="campoDrive" id="campoDrive" hidden><input type="text" id="chaveDrive" placeholder="Chave do Google Drive (AIza…)" aria-label="Chave do Google Drive" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  </div>
+    <p class="err" id="erroNovo" role="alert"></p>
+    <div class="acoes"><button class="btn ghost" id="novoGuardar" type="button">Guardar</button><button class="btn" id="novoAssistir" type="button">Assistir agora</button></div>
+  </div>
+</div>
+<div id="detalhe" class="dialogo" role="dialog" aria-modal="true" aria-labelledby="detTitulo">
+  <div class="box">
+    <div class="det-capa" id="detCapa"></div>
+    <h2 id="detTitulo"></h2>
+    <p class="det-info" id="detInfo"></p>
+    <p class="det-resumo" id="detResumo"></p>
+    <button class="btn" id="detAbrir" type="button">▶ Abrir sala</button>
+    <button class="btn ghost" id="detVisto" type="button"></button>
+    <button class="btn ghost aj-apagar" id="detRemover" type="button">Tirar da lista</button>
+    <button class="link-ajustes" id="detFechar" type="button">Fechar</button>
   </div>
 </div>
 <div id="toast" role="status"></div>

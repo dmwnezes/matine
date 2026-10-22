@@ -61,10 +61,10 @@ test("título limpo a partir do nome do arquivo", () => {
 
 test("link da sala leva o código e a chave", () => {
   const k = "AIza" + "x".repeat(35);
-  assert.deepEqual(lerHash(montarHash("ABC234", k)), { codigo: "ABC234", chave: k });
-  assert.deepEqual(lerHash("#abc234"), { codigo: "ABC234", chave: "" }); // link antigo, sem chave
-  assert.deepEqual(lerHash("#ABC234~lixo"), { codigo: "ABC234", chave: "" });
-  assert.deepEqual(lerHash(""), { codigo: "", chave: "" });
+  assert.deepEqual(lerHash(montarHash("ABC234", k)), { codigo: "ABC234", chave: k, lista: "" });
+  assert.deepEqual(lerHash("#abc234"), { codigo: "ABC234", chave: "", lista: "" }); // link antigo, sem chave
+  assert.deepEqual(lerHash("#ABC234~lixo"), { codigo: "ABC234", chave: "", lista: "" });
+  assert.deepEqual(lerHash(""), { codigo: "", chave: "", lista: "" });
   assert.equal(montarHash("ABC234", ""), "#ABC234");
 });
 

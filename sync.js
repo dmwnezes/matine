@@ -105,8 +105,11 @@ export const chaveValida = (k) => /^AIza[0-9A-Za-z_-]{35}$/.test(k || "");
  * (como na Estante, que levava o banco no link). A chave não é segredo: só funciona no dmwnezes.com.
  */
 export function lerHash(hash) {
-  const [c = "", k = ""] = decodeURIComponent(String(hash).replace(/^#/, "")).trim().split("~");
-  return { codigo: c.toUpperCase(), chave: chaveValida(k) ? k : "" };
+  const h = decodeURIComponent(String(hash).replace(/^#/, "")).trim();
+  // Link da lista compartilhada: #lista=CODIGO16
+  if (h.startsWith("lista=")) { const l = h.slice(6); return { codigo: "", chave: "", lista: /^[A-Za-z0-9]{16}$/.test(l) ? l : "" }; }
+  const [c = "", k = ""] = h.split("~");
+  return { codigo: c.toUpperCase(), chave: chaveValida(k) ? k : "", lista: "" };
 }
 export const montarHash = (codigo, chave) => "#" + codigo + (chave ? "~" + chave : "");
 

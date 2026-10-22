@@ -38,6 +38,17 @@
         }
       }
     },
+    "listas": {
+      "$lista": {
+        ".read": "auth != null && $lista.length === 16",
+        "filmes": {
+          "$f": {
+            ".write": "auth != null && $lista.length === 16",
+            ".validate": "newData.hasChildren(['link', 'titulo', 'em']) && newData.child('link').isString() && newData.child('link').val().length <= 2000 && newData.child('titulo').isString() && newData.child('titulo').val().length <= 120 && newData.child('em').isNumber() && (!newData.child('visto').exists() || newData.child('visto').isNumber())"
+          }
+        }
+      }
+    },
     "vazias": {
       ".read": "auth != null",
       ".indexOn": ".value",

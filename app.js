@@ -12,6 +12,7 @@ import { iniciarControles } from "./controles.js";
 import { iniciarBrotos, comandoBrotos } from "./brotos.js";
 import { comandoEfeito, sortearValor, valorValido, textoDoEfeito, rodarEfeito } from "./efeitos.js";
 import { fotoParaChat, fotoValida } from "./fotos.js";
+import { novaLista, listaValida, organizar, jaNaFila } from "./lista.js";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video");
@@ -130,11 +131,9 @@ $("salvarChave").addEventListener("click", () => {
     $("erroInicio").textContent = "Essa sala não existe mais. Abra uma nova abaixo.";
   }
   codigo = "";
-  $("textoInicio").textContent = "Cole o link de um vídeo, abra a sala e mande o convite.";
-  $("campoFilme").hidden = false;
-  $("comCodigo").hidden = false;
-  $("entrar").textContent = "Abrir sala";
-  $("entrar").disabled = false;
+  // Sem convite: a tela inicial é a lista compartilhada "Para ver depois".
+  if ($("erroInicio").textContent) toast($("erroInicio").textContent);
+  await abrirCasa();
 })();
 
 $("entrar").addEventListener("click", async () => {
@@ -153,7 +152,7 @@ $("entrar").addEventListener("click", async () => {
 });
 $("nome").addEventListener("keydown", (e) => { if (e.key === "Enter") $("entrar").click(); });
 
-async function criarSala(link, titulo, capa) {
+async function criarSala(link, titulo, capa, daLista = null) {
   lerChaveDrive($("chaveDrive"));
   const v = linkDoVideo(link, minhaChaveDrive);
   if (v.semChaveDrive) $("campoDrive").hidden = false;
@@ -162,7 +161,7 @@ async function criarSala(link, titulo, capa) {
   for (let tentativa = 0; tentativa < 5; tentativa++) {
     codigo = novoCodigo();
     try {
-      await set(r("info"), { dono: uid, link: link.trim(), titulo: titulo.trim() || nomeDoArquivo(link), capa: capa || null, chaveDrive: v.drive ? minhaChaveDrive : null, criada: serverTimestamp() });
+      await set(r("info"), { dono: uid, link: link.trim(), titulo: titulo.trim() || nomeDoArquivo(link), capa: capa || null, chaveDrive: v.drive ? minhaChaveDrive : null, criada: serverTimestamp(), lista: listaValida(minhaLista) ? minhaLista : null, item: daLista });
       break;
     } catch (e) { if (tentativa === 4) throw new Error("Não consegui criar a sala. Confira as regras do banco (README)."); }
   }
@@ -175,6 +174,165 @@ function nomeDoArquivo(link) {
   catch { return "Filme"; }
 }
 
+// ---------- Tela inicial: lista compartilhada "Para ver depois" ----------
+// A lista mora no banco em listas/<código>. Quem entra numa sala aberta pela lista passa a ver a mesma
+// lista (o código vai junto na sala); dá também para mandar o link "#lista=…".
+let minhaLista = guardado("matine-lista");
+let filmes = {}, paraAbrir = null, desligarLista = null;
+const fl = (p = "") => ref(db, `listas/${minhaLista}/filmes${p}`);
+
+/** Passa a usar a lista [nova]; o que estava só na lista antiga deste aparelho vai junto. */
+async function adotarLista(nova) {
+  if (!listaValida(nova) || nova === minhaLista) return;
+  const velha = minhaLista;
+  minhaLista = nova; guardar("matine-lista", nova);
+  if (!listaValida(velha)) return;
+  try {
+    const antigos = (await get(ref(db, `listas/${velha}/filmes`))).val() || {};
+    const atuais = (await get(fl())).val() || {};
+    for (const f of Object.values(antigos)) if (!f.visto && !jaNaFila(atuais, f.link)) await push(fl(), f);
+  } catch (e) { console.warn("Matinê: não consegui juntar as listas", e); }
+}
+
+async function abrirCasa() {
+  if (doLink.lista) { await adotarLista(doLink.lista); history.replaceState(null, "", location.pathname); }
+  if (!listaValida(minhaLista)) { minhaLista = novaLista(); guardar("matine-lista", minhaLista); }
+  $("inicio").hidden = true;
+  $("casa").hidden = false;
+  $("casaEu").innerHTML = svgDa(minhaFoto);
+  desligarLista?.();
+  desligarLista = onValue(fl(), (s) => { filmes = s.val() || {}; desenharCasa(); }, (e) => {
+    console.error(e);
+    toast("Não consegui abrir a lista. Confira as regras do banco (README).");
+  });
+}
+
+const CORES_CAPA = [["#3b2a7a", "#e5737a"], ["#16405b", "#5fb8a3"], ["#2b2140", "#e6c14f"], ["#3a1f4f", "#9b8cff"], ["#1d3a2a", "#5fb873"], ["#4a2a1a", "#e8836b"]];
+const capaOk = (c) => !!c && /^https:\/\/upload\.wikimedia\.org\//.test(c.img || "") && /^https:\/\/pt\.wikipedia\.org\//.test(c.pagina || "");
+/** Capa do filme (da Wikipédia) ou, sem capa, um cartaz com a inicial do título. */
+function poster(f) {
+  const el = document.createElement("div");
+  el.className = "poster";
+  let h = 0; for (const ch of f.titulo || "") h = (h * 31 + ch.charCodeAt(0)) | 0;
+  const [a, b] = CORES_CAPA[Math.abs(h) % CORES_CAPA.length];
+  el.style.setProperty("--c1", a); el.style.setProperty("--c2", b);
+  if (capaOk(f.capa)) el.append(Object.assign(document.createElement("img"), { src: f.capa.img, alt: "", loading: "lazy" }));
+  else el.append(Object.assign(document.createElement("span"), { className: "letra", textContent: (f.titulo || "?").trim().charAt(0).toUpperCase() }));
+  return el;
+}
+const quando = (ms) => new Date(ms).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+function itemLista(f, legenda) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "item-lista";
+  b.setAttribute("aria-label", f.titulo);
+  const t = document.createElement("b"); t.textContent = f.titulo;
+  const s = document.createElement("small"); s.textContent = legenda;
+  b.append(poster(f), t, s);
+  b.onclick = () => abrirDetalhe(f);
+  return b;
+}
+
+function desenharCasa() {
+  const { proxima, fila, vistos } = organizar(filmes);
+  $("abaVer").textContent = `Para ver · ${fila.length + (proxima ? 1 : 0)}`;
+  $("abaVistos").textContent = `Já vimos · ${vistos.length}`;
+  $("marquise").hidden = !proxima;
+  $("vazio").hidden = !!proxima;
+  if (proxima) {
+    $("marquise").style.backgroundImage = capaOk(proxima.capa) ? `url("${proxima.capa.img}")` : "";
+    $("proxTitulo").textContent = proxima.titulo;
+    $("proxQuem").textContent = proxima.nome ? `Guardado por ${proxima.nome}` : "";
+  }
+  $("filaTitulo").hidden = !fila.length;
+  $("fila").replaceChildren(...fila.map((f) => itemLista(f, f.nome ? `por ${f.nome}` : "")));
+  $("gradeVistos").replaceChildren(...vistos.map((f) => itemLista(f, `Visto em ${quando(f.visto)}`)));
+  $("vazioVistos").hidden = vistos.length > 0;
+  paraAbrir = proxima;
+}
+
+function mostrarAba(vistos) {
+  $("paraVer").hidden = vistos; $("vistos").hidden = !vistos;
+  $("abaVer").classList.toggle("on", !vistos); $("abaVistos").classList.toggle("on", vistos);
+  $("abaVer").setAttribute("aria-selected", !vistos); $("abaVistos").setAttribute("aria-selected", vistos);
+}
+$("abaVer").addEventListener("click", () => mostrarAba(false));
+$("abaVistos").addEventListener("click", () => mostrarAba(true));
+$("casaEu").addEventListener("click", () => abrirAjustes());
+$("abrirAjustesCasa").addEventListener("click", () => abrirAjustes());
+$("proxAbrir").addEventListener("click", () => paraAbrir && abrirSalaDaLista(paraAbrir));
+$("proxMais").addEventListener("click", () => paraAbrir && abrirDetalhe(paraAbrir));
+
+/** Abre a sala com um filme da lista (o nome é obrigatório para entrar). */
+async function abrirSalaDaLista(f) {
+  if (!meuNome) { toast("Escreva seu nome primeiro"); abrirAjustes(); $("ajNome").focus(); return; }
+  try {
+    await criarSala(f.link, f.titulo, f.capa || null, f.id);
+    $("detalhe").classList.remove("show"); $("novo").classList.remove("show");
+    desligarLista?.(); desligarLista = null;
+    $("casa").hidden = true;
+    await entrarNaSala();
+  } catch (e) { toast(e.message || "Não consegui abrir a sala."); }
+}
+
+// Detalhes de um filme da lista
+let noDetalhe = null;
+function abrirDetalhe(f) {
+  noDetalhe = f;
+  $("detCapa").replaceChildren(poster(f));
+  $("detTitulo").textContent = f.titulo;
+  $("detInfo").textContent = [f.nome && `Guardado por ${f.nome}`, f.visto && `visto em ${quando(f.visto)}`].filter(Boolean).join(" · ");
+  $("detResumo").textContent = f.capa?.resumo || "";
+  $("detVisto").textContent = f.visto ? "Voltar para “Para ver”" : "Já vimos ✓";
+  $("detRemover").textContent = "Tirar da lista"; $("detRemover").dataset.confirma = "";
+  $("detalhe").classList.add("show");
+}
+const fecharDetalhe = () => $("detalhe").classList.remove("show");
+$("detFechar").addEventListener("click", fecharDetalhe);
+$("detalhe").addEventListener("click", (e) => { if (e.target.id === "detalhe") fecharDetalhe(); });
+$("detAbrir").addEventListener("click", () => noDetalhe && abrirSalaDaLista(noDetalhe));
+$("detVisto").addEventListener("click", () => {
+  if (!noDetalhe) return;
+  update(fl(`/${noDetalhe.id}`), { visto: noDetalhe.visto ? null : serverTimestamp() }).catch(() => toast("Não consegui salvar."));
+  fecharDetalhe();
+});
+$("detRemover").addEventListener("click", () => {
+  const b = $("detRemover");
+  if (!b.dataset.confirma) { b.dataset.confirma = "1"; b.textContent = "Toque de novo para tirar"; return; }
+  remove(fl(`/${noDetalhe.id}`)).catch(() => toast("Não consegui tirar."));
+  fecharDetalhe();
+});
+
+// Gaveta "+": colar o link, ver a capa e guardar (ou já abrir a sala)
+$("adicionar").addEventListener("click", () => { $("erroNovo").textContent = ""; $("novo").classList.add("show"); $("link").focus(); });
+$("novo").addEventListener("click", (e) => { if (e.target.id === "novo") $("novo").classList.remove("show"); });
+/** Valida o link e guarda na lista; devolve o filme guardado (ou null se deu erro). */
+async function guardarNovo() {
+  const link = $("link").value.trim();
+  lerChaveDrive($("chaveDrive"));
+  const v = linkDoVideo(link, minhaChaveDrive);
+  if (v.semChaveDrive) $("campoDrive").hidden = false;
+  if (v.erro) { $("erroNovo").textContent = v.erro; return null; }
+  if (jaNaFila(filmes, link)) { $("erroNovo").textContent = "Esse filme já está na lista."; return null; }
+  $("erroNovo").textContent = "";
+  const f = { link, titulo: ($("titulo").value.trim() || nomeDoArquivo(link)).slice(0, 120), capa: (await novaCapa.pronta()) || null, nome: meuNome || null, por: uid, em: serverTimestamp() };
+  try {
+    const novo = await push(fl(), f);
+    $("link").value = ""; $("titulo").value = ""; novaCapa.limpar();
+    $("novo").classList.remove("show");
+    return { ...f, id: novo.key };
+  } catch { $("erroNovo").textContent = "Não consegui guardar. Confira a internet."; return null; }
+}
+$("novoGuardar").addEventListener("click", async () => { if (await guardarNovo()) toast("Guardado na lista"); });
+$("novoAssistir").addEventListener("click", async () => { const f = await guardarNovo(); if (f) abrirSalaDaLista(f); });
+
+$("compartilharLista").addEventListener("click", async () => {
+  const link = `${location.origin}${location.pathname}#lista=${minhaLista}`;
+  const texto = `Nossa lista de filmes para ver na Matinê: ${link}`;
+  if (window.Matine?.compartilhar) { window.Matine.compartilhar(texto); return; }
+  if (navigator.share) { try { await navigator.share({ text: texto }); return; } catch (e) { if (e.name === "AbortError") return; } }
+  try { await navigator.clipboard.writeText(link); toast("Link da lista copiado"); } catch { prompt("Copie o link da lista:", link); }
+});
+
 // ---------- Entrar com código ----------
 function entrarComCodigo() {
   const c = $("codigoDigitado").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -182,6 +340,8 @@ function entrarComCodigo() {
   location.hash = c; // o hashchange recarrega a página já na sala
 }
 $("irCodigo").addEventListener("click", entrarComCodigo);
+$("irCodigoCasa").addEventListener("click", () => { $("codigoDigitado").value = $("codigoCasa").value; entrarComCodigo(); });
+$("codigoCasa").addEventListener("keydown", (e) => { if (e.key === "Enter") $("irCodigoCasa").click(); });
 $("codigoDigitado").addEventListener("keydown", (e) => { if (e.key === "Enter") entrarComCodigo(); });
 
 // ---------- Capa do filme ----------
@@ -275,6 +435,7 @@ async function entrarNaSala() {
 function mudouInfo(novo) {
   const trocou = !info || novo.link !== info.link || !video.src;
   info = novo;
+  if (info.lista && info.lista !== minhaLista) adotarLista(info.lista); // quem entra passa a ver a mesma lista
   $("tituloMini").textContent = info.titulo || "Filme";
   $("codigoMini").textContent = codigo;
   document.title = `${info.titulo || "Filme"} · Matinê`;
@@ -722,6 +883,15 @@ function flutuar(x) {
   if (x.uid !== uid) vibrar(12);
 }
 
+// Filme da lista chegou perto do fim: vai para "Já vimos" (uma vez por sala).
+let marcouVisto = false;
+video.addEventListener("timeupdate", () => {
+  if (marcouVisto || !info?.lista || !info?.item || !(video.duration > 600)) return;
+  if (video.currentTime / video.duration < 0.92) return;
+  marcouVisto = true;
+  update(ref(db, `listas/${info.lista}/filmes/${info.item}`), { visto: serverTimestamp() }).catch(() => {});
+});
+
 // ---------- Tela de ajustes ----------
 function abrirAjustes() {
   $("ajNome").value = meuNome;
@@ -741,6 +911,7 @@ $("ajFotos").addEventListener("click", (e) => {
   minhaFoto = b.dataset.k; guardar("matine-foto", minhaFoto);
   $("ajFotos").querySelectorAll("button").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); });
   desenharFotos(); atualizarPerfil();
+  $("casaEu").innerHTML = svgDa(minhaFoto);
 });
 $("ajCores").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
