@@ -48,7 +48,7 @@ Limites:
 - Link direto do arquivo.
 - Dropbox (o link de compartilhar é convertido sozinho).
 - Google Drive, com a chave do Google Drive (passo 4) e o arquivo estiver compartilhado como "qualquer pessoa com o link". O Google pode bloquear arquivos muito baixados ("limite de downloads"); aí a sala avisa que não conseguiu abrir.
-- YouTube **não** funciona (o YouTube não deixa tocar fora do player dele).
+- **YouTube e Vimeo** (link do vídeo, Shorts, `youtu.be`, `vimeo.com/123` ou não listado `vimeo.com/123/abc`): toca no player do próprio site, embutido na sala, e sincroniza do mesmo jeito. Os controles e gestos são os da Matinê (o player embutido não recebe toques, para a sala sempre ficar sabendo). Limites: não vai para a TV nem para a janelinha flutuante do navegador; a correção fina de velocidade não existe nesses sites, então a sala só pula quando alguém passa de 1,5 s de diferença; vídeo com incorporação bloqueada pelo dono, privado ou com senha não abre.
 
 ## Configurar (uma vez só)
 
@@ -99,6 +99,7 @@ Abrindo o site em `localhost`, ele usa o emulador do Firebase (`firebase emulato
 | `sync.js` | Contas da sincronia e leitura dos links (testado em `test/`) |
 | `capa.js` | Capa e resumo do filme pela Wikipédia (sem chave) |
 | `video.js` | Abre o vídeo: direto quando o aparelho toca, ou convertendo em tempo real ([Mediabunny](https://mediabunny.dev)) |
+| `embed.js` | YouTube e Vimeo embutidos, fingindo ser o `<video>` para a sincronia e os controles |
 | `config.js` | Dados do seu Firebase e chave opcional do Drive |
 | `database.rules.json` | Regras de segurança do banco |
 | `avatars.js` | Fotos de perfil (as mesmas da Estante) |

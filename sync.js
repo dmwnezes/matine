@@ -44,8 +44,8 @@ export function linkDoVideo(texto, chaveDrive) {
   if (u.protocol !== "https:" && u.protocol !== "http:") return { erro: "O link precisa começar com https://" };
   const host = u.hostname.replace(/^www\./, "");
 
-  if (host === "youtube.com" || host === "youtu.be" || host === "m.youtube.com")
-    return { erro: "Vídeos do YouTube não dá para tocar aqui. Use um link direto do arquivo." };
+  const embed = embedDoLink(u);
+  if (embed) return { url: u.toString(), embed };
 
   if (host === "drive.google.com" || host === "docs.google.com") {
     const id = u.pathname.match(/\/d\/([\w-]{10,})/)?.[1] || u.searchParams.get("id");
@@ -61,6 +61,30 @@ export function linkDoVideo(texto, chaveDrive) {
   }
 
   return { url: u.toString() };
+}
+
+/**
+ * Link de um site com player próprio que dá para comandar de fora (play, pausa, pulo): YouTube e Vimeo.
+ * Devolve { tipo, id, h? } ou null. `h` é a chave dos vídeos "não listados" do Vimeo.
+ */
+export function embedDoLink(link) {
+  let u;
+  try { u = new URL(link); } catch { return null; }
+  const host = u.hostname.replace(/^(www|m|music)\./, "");
+  const partes = u.pathname.split("/").filter(Boolean);
+  if (host === "youtu.be" || host === "youtube.com" || host === "youtube-nocookie.com") {
+    const id = host === "youtu.be" ? partes[0]
+      : partes[0] === "watch" ? u.searchParams.get("v")
+      : ["shorts", "embed", "live", "v"].includes(partes[0]) ? partes[1] : null;
+    return /^[\w-]{11}$/.test(id || "") ? { tipo: "youtube", id } : null;
+  }
+  if (host === "vimeo.com" || host === "player.vimeo.com") {
+    const i = partes.findIndex((p) => /^\d+$/.test(p));
+    if (i < 0) return null;
+    const h = u.searchParams.get("h") || (/^[\da-f]{6,}$/i.test(partes[i + 1] || "") ? partes[i + 1] : "");
+    return { tipo: "vimeo", id: partes[i], ...(h && { h }) };
+  }
+  return null;
 }
 
 /** Código curto da sala, sem letras que confundem (0/O, 1/I/L). */

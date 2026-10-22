@@ -658,7 +658,7 @@ $("pip").addEventListener("click", async () => {
 // Só vai para a TV o arquivo original: vídeo convertido na hora (MKV, Dolby…) não dá.
 let urlDoFilme = "", naTvApp = false;
 const appTv = !!window.Matine?.transmitir && window.Matine.podeTransmitir?.();
-const convertido = () => video.src.startsWith("blob:");
+const convertido = () => !/^https?:/.test(video.src); // blob: (convertido) ou embed: (YouTube/Vimeo)
 function verTvDisponivel() {
   if (appTv) { $("cTv").hidden = false; return; }
   if (video.remote?.watchAvailability && !convertido()) {

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, novoCodigo, codigoValido, limparTitulo, lerHash, montarHash } from "../sync.js";
+import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, embedDoLink, novoCodigo, codigoValido, limparTitulo, lerHash, montarHash } from "../sync.js";
 
 test("posição esperada anda com o relógio só quando está tocando", () => {
   assert.equal(esperado({ tocando: true, pos: 10, em: 1000 }, 4000), 13);
@@ -29,7 +29,7 @@ test("links de vídeo", () => {
   assert.equal(linkDoVideo("https://site.com/f.mp4").url, "https://site.com/f.mp4");
   assert.match(linkDoVideo("https://www.dropbox.com/s/x/f.mp4?dl=0").url, /raw=1/);
   assert.ok(!linkDoVideo("https://www.dropbox.com/s/x/f.mp4?dl=0").url.includes("dl=0"));
-  assert.ok(linkDoVideo("https://youtu.be/abc").erro);
+  assert.deepEqual(linkDoVideo("https://youtu.be/dQw4w9WgXcQ").embed, { tipo: "youtube", id: "dQw4w9WgXcQ" });
   assert.ok(linkDoVideo("ftp://x/y").erro);
   assert.ok(linkDoVideo("não é link").erro);
   const id = "1AbCdEfGhIjKlMnOp";
@@ -66,4 +66,23 @@ test("link da sala leva o código e a chave", () => {
   assert.deepEqual(lerHash("#ABC234~lixo"), { codigo: "ABC234", chave: "" });
   assert.deepEqual(lerHash(""), { codigo: "", chave: "" });
   assert.equal(montarHash("ABC234", ""), "#ABC234");
+});
+
+test("links do YouTube e do Vimeo viram player embutido", () => {
+  const yt = { tipo: "youtube", id: "dQw4w9WgXcQ" };
+  for (const l of [
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30s",
+    "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
+    "https://youtu.be/dQw4w9WgXcQ?si=abc",
+    "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+    "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "https://www.youtube.com/live/dQw4w9WgXcQ",
+  ]) assert.deepEqual(embedDoLink(l), yt, l);
+  assert.equal(embedDoLink("https://www.youtube.com/watch?v=curto"), null);
+  assert.equal(embedDoLink("https://www.youtube.com/@canal"), null);
+  assert.deepEqual(embedDoLink("https://vimeo.com/76979871"), { tipo: "vimeo", id: "76979871" });
+  assert.deepEqual(embedDoLink("https://vimeo.com/76979871/8272103f6e"), { tipo: "vimeo", id: "76979871", h: "8272103f6e" });
+  assert.deepEqual(embedDoLink("https://player.vimeo.com/video/76979871?h=8272103f6e"), { tipo: "vimeo", id: "76979871", h: "8272103f6e" });
+  assert.deepEqual(embedDoLink("https://vimeo.com/channels/staffpicks/76979871"), { tipo: "vimeo", id: "76979871" });
+  assert.equal(embedDoLink("https://site.com/f.mp4"), null);
 });

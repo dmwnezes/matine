@@ -6,6 +6,8 @@
 
 // "mediabunny" vem do mapa de importação do index.html: o módulo do Dolby (AC3) importa o mesmo endereço,
 // e precisa ser a mesma cópia para o decodificador que ele registra valer na conversão.
+import { embedDoLink } from "./sync.js";
+
 const AC3 = "https://cdn.jsdelivr.net/npm/@mediabunny/ac3@1.62.0/dist/bundles/mediabunny-ac3.min.mjs";
 const MS = globalThis.ManagedMediaSource || globalThis.MediaSource; // ManagedMediaSource = iPhone (iOS 17.1+)
 
@@ -37,6 +39,8 @@ const carregarAc3 = () => (ac3 ??= import(AC3).then((m) => m.registerAc3Decoder(
  * `aoFalhar(mensagem)` é chamado quando o aparelho não consegue tocar o arquivo de jeito nenhum.
  */
 export async function abrirVideo(video, url, aoFalhar) {
+  const emb = embedDoLink(url);
+  if (emb) return (await import("./embed.js")).abrirEmbed(video, emb, aoFalhar);
   let m, input;
   try {
     m = await carregarMediabunny();

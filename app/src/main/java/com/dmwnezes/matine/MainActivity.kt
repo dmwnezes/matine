@@ -213,7 +213,7 @@ class MainActivity : Activity() {
 
         override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean {
             val url = req.url.toString()
-            if (ehDoSite(url)) return false
+            if (ehDoSite(url) || !req.isForMainFrame) return false // iframe (YouTube/Vimeo) fica dentro do site
             runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
             return true
         }

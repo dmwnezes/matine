@@ -67,6 +67,10 @@
   #sala.on { display: flex; position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100dvh); }
   .player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; flex: none; padding-top: env(safe-area-inset-top); box-sizing: content-box; }
   video { width: 100%; height: 100%; display: block; background: #000; }
+  /* YouTube/Vimeo: o iframe não recebe toques, tudo passa pelos controles da Matinê (e a sala fica sabendo) */
+  .embed { width: 100%; height: 100%; pointer-events: none; background: #000; }
+  .embed iframe, .embed > div { width: 100% !important; height: 100% !important; border: 0; display: block; }
+  body.na-tv .embed { opacity: 0; }
   .overlay { position: absolute; inset: 0; z-index: 4; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 16px; background: rgba(10,7,30,.82); color: #fff; font-size: 15px; line-height: 1.4; }
   .overlay p { margin: 0 0 12px; max-width: 360px; }
   .overlay .btn { padding: 11px 22px; font-size: 15px; }
