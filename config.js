@@ -14,5 +14,5 @@ export const chaveFirebase = "AIzaSyBaOVrcCVxUwucD1kmU0edUcLeZIVNehFE";
 export const chaveDriveFixa = "AIzaSyD3dpL49NNV6T0FQSGAuOviontjGJ06b-U";
 
 // Chave do TMDB (themoviedb.org) para nome, capa e sinopse dos filmes — a mesma usada na Estante.
-// Vazia = os filmes ficam sem capa (o resto funciona igual).
-export const chaveTmdb = "";
+// Não é segredo (só lê dados de filmes); vazia = os filmes ficam sem capa (o resto funciona igual).
+export const chaveTmdb = "180af00d5cf6ac63384a94f2f7e11020";
