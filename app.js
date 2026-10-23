@@ -279,7 +279,7 @@ let noDetalhe = null;
 function abrirDetalhe(f) {
   noDetalhe = f;
   $("detCapa").replaceChildren(poster(f));
-  $("detTitulo").textContent = f.titulo;
+  $("detNome").value = f.titulo;
   $("detInfo").textContent = [f.nome && `Guardado por ${f.nome}`, f.visto && `visto em ${quando(f.visto)}`].filter(Boolean).join(" · ");
   $("detResumo").textContent = f.capa?.resumo || "";
   $("detVisto").textContent = f.visto ? "Voltar para “Para ver”" : "Já vimos ✓";
@@ -287,6 +287,26 @@ function abrirDetalhe(f) {
   $("detalhe").classList.add("show");
 }
 const fecharDetalhe = () => $("detalhe").classList.remove("show");
+/** Trocar a capa de um filme da lista: o nome passa a ser o do filme escolhido. */
+function trocarCapaDoDetalhe() {
+  if (!noDetalhe) return;
+  const f = noDetalhe;
+  escolherCapa(f.titulo, 0, f.capa, (c) => {
+    // O nome acompanha a capa, a não ser que a pessoa tenha dado um nome próprio ao filme.
+    const nomeProprio = f.capa && f.titulo !== f.capa.titulo;
+    const novo = { capa: c, titulo: (nomeProprio ? f.titulo : c?.titulo || f.titulo).slice(0, 120) };
+    update(fl(`/${f.id}`), novo).then(() => abrirDetalhe({ ...f, ...novo })).catch(() => toast("Não consegui trocar a capa."));
+  });
+}
+$("detCapa").addEventListener("click", trocarCapaDoDetalhe);
+$("detTrocarCapa").addEventListener("click", trocarCapaDoDetalhe);
+$("detNome").addEventListener("change", () => {
+  const n = $("detNome").value.trim().slice(0, 120);
+  if (!noDetalhe || !n) { $("detNome").value = noDetalhe?.titulo || ""; return; }
+  noDetalhe = { ...noDetalhe, titulo: n };
+  update(fl(`/${noDetalhe.id}`), { titulo: n }).then(() => toast("Nome salvo")).catch(() => toast("Não consegui salvar o nome."));
+});
+$("detNome").addEventListener("keydown", (e) => { if (e.key === "Enter") $("detNome").blur(); });
 $("detFechar").addEventListener("click", fecharDetalhe);
 $("detalhe").addEventListener("click", (e) => { if (e.target.id === "detalhe") fecharDetalhe(); });
 $("detAbrir").addEventListener("click", () => noDetalhe && abrirSalaDaLista(noDetalhe));
@@ -360,7 +380,7 @@ function cartaoCapa(el, capa, aoRecusar) {
   fonte.append("Fonte: ", Object.assign(document.createElement("a"), { href: capa.pagina, target: "_blank", rel: "noopener", textContent: capa.pagina.includes("themoviedb.org") ? "TMDB" : capa.pagina.includes("imdb.com") ? "IMDb" : "Wikipédia" }));
   txt.append(t, p, fonte);
   if (aoRecusar) {
-    const b = Object.assign(document.createElement("button"), { type: "button", textContent: "Não é esse filme" });
+    const b = Object.assign(document.createElement("button"), { type: "button", textContent: "Trocar capa" });
     b.onclick = aoRecusar;
     txt.append(b);
   }
@@ -369,20 +389,31 @@ function cartaoCapa(el, capa, aoRecusar) {
 
 /** Busca a capa enquanto a pessoa digita o link ou o nome (espera ela parar de digitar). */
 function capaAoDigitar(campoLink, campoTitulo, el) {
-  let escolhida = null, busca = Promise.resolve(null), timer = 0, vez = 0;
-  // "Não é esse filme" mostra o próximo candidato do TMDB; acabou a lista, fica sem capa.
-  const mostrar = (lista, i) => {
-    escolhida = lista[i] || null;
-    cartaoCapa(el, escolhida, () => mostrar(lista, i + 1));
+  let escolhida = null, busca = Promise.resolve(null), timer = 0, vez = 0, termo = "", ano = 0, manual = false;
+  // "Trocar capa" abre a grade com todos os resultados; sem resultado, aparece "Procurar capa".
+  // Capa escolhida na grade fica: digitar depois não troca mais sozinho.
+  const trocar = () => escolherCapa(termo, ano, escolhida, (c) => { clearTimeout(timer); timer = 0; vez++; manual = true; busca = Promise.resolve(c); mostrar(c); });
+  const mostrar = (c) => {
+    escolhida = c;
+    cartaoCapa(el, c, trocar);
+    if (!c && termo && termo !== "Filme") {
+      const linha = Object.assign(document.createElement("div"), { className: "sem-capa" });
+      linha.append(Object.assign(document.createElement("span"), { textContent: "Nenhuma capa encontrada" }),
+        Object.assign(document.createElement("button"), { type: "button", textContent: "Procurar capa", onclick: trocar }));
+      el.replaceChildren(linha);
+      el.hidden = false;
+    }
   };
   const buscar = () => {
+    if (manual) return;
     const nome = campoLink.value.trim() ? nomeDoArquivo(campoLink.value) : "";
-    const termo = campoTitulo.value.trim() || (nome ? limparTitulo(nome) : "");
-    const minha = ++vez;
+    termo = campoTitulo.value.trim() || (nome ? limparTitulo(nome) : "");
     let bruto = ""; try { bruto = decodeURIComponent(new URL(campoLink.value.trim()).pathname.split("/").pop() || ""); } catch {}
-    busca = (termo && termo !== "Filme" ? buscarCapa(termo, anoDoNome(bruto)) : Promise.resolve([])).then((lista) => {
+    ano = anoDoNome(bruto);
+    const minha = ++vez;
+    busca = (termo && termo !== "Filme" ? buscarCapa(termo, ano) : Promise.resolve([])).then((lista) => {
       if (minha !== vez) return escolhida;
-      mostrar(lista, 0);
+      mostrar(lista[0] || null);
       return escolhida;
     });
   };
@@ -392,11 +423,47 @@ function capaAoDigitar(campoLink, campoTitulo, el) {
   return {
     // Na hora de salvar: termina a busca que estava esperando a pessoa parar de digitar.
     pronta() { if (timer) { clearTimeout(timer); timer = 0; buscar(); } return busca.then(() => escolhida); },
-    limpar() { escolhida = null; cartaoCapa(el, null); },
+    limpar() { escolhida = null; termo = ""; manual = false; cartaoCapa(el, null); },
   };
 }
 const novaCapa = capaAoDigitar($("link"), $("titulo"), $("capaNova"));
 const capaDaTroca = capaAoDigitar($("novoLink"), $("novoTitulo"), $("capaTroca"));
+
+// ---------- Escolher capa: busca no TMDB com grade de capas ----------
+let aoEscolherCapa = null, vezCapas = 0, timerCapas = 0, anoCapas = 0, atualCapas = "";
+/** Abre a grade de capas buscando [termo]; [aoEscolher] recebe a capa escolhida (ou null = sem capa). */
+function escolherCapa(termo, ano, atual, aoEscolher) {
+  aoEscolherCapa = aoEscolher; anoCapas = ano || 0; atualCapas = atual?.pagina || "";
+  $("capaBusca").value = termo || "";
+  $("capas").classList.add("show");
+  buscarCapas();
+}
+async function buscarCapas() {
+  const t = $("capaBusca").value.trim(), minha = ++vezCapas;
+  const grade = $("capasGrade");
+  if (t.length < 2) { grade.innerHTML = '<p class="hint">Escreva o nome do filme ou da série.</p>'; return; }
+  grade.innerHTML = '<p class="hint">Buscando…</p>';
+  const lista = await buscarCapa(t, anoCapas);
+  if (minha !== vezCapas) return;
+  if (!lista.length) { grade.innerHTML = '<p class="hint">Nada encontrado. Tente outro nome, o nome original ou em inglês.</p>'; return; }
+  grade.replaceChildren(...lista.map((c) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", className: c.pagina === atualCapas ? "on" : "" });
+    b.setAttribute("aria-label", `${c.titulo}${c.ano ? " (" + c.ano + ")" : ""}`);
+    b.append(poster({ titulo: c.titulo, capa: c }), Object.assign(document.createElement("b"), { textContent: c.titulo }), Object.assign(document.createElement("small"), { textContent: c.ano || "" }));
+    b.onclick = () => fecharCapas(c);
+    return b;
+  }));
+}
+function fecharCapas(escolha) {
+  $("capas").classList.remove("show");
+  const cb = aoEscolherCapa; aoEscolherCapa = null;
+  if (escolha !== undefined && cb) cb(escolha);
+}
+$("capaBusca").addEventListener("input", () => { clearTimeout(timerCapas); timerCapas = setTimeout(buscarCapas, 450); });
+$("capaBusca").addEventListener("keydown", (e) => { if (e.key === "Enter") { clearTimeout(timerCapas); buscarCapas(); } });
+$("capaNenhuma").addEventListener("click", () => fecharCapas(null));
+$("capasFechar").addEventListener("click", () => fecharCapas());
+$("capas").addEventListener("click", (e) => { if (e.target.id === "capas") fecharCapas(); });
 
 // ---------- Dentro da sala ----------
 let entrouEm = 0;
@@ -431,6 +498,8 @@ async function entrarNaSala() {
   $("inicio").hidden = true;
   $("sala").classList.add("on");
   ajustarTela();
+  // Voltar do celular (ou do navegador) na sala pergunta se quer sair, em vez de fechar tudo.
+  history.pushState({ sala: codigo }, "");
 
   onValue(r("info"), (s) => { if (s.exists()) mudouInfo(s.val()); });
   onValue(r("estado"), (s) => { if (s.exists()) { estado = s.val(); aplicar(); } });
@@ -444,6 +513,7 @@ function mudouInfo(novo) {
   info = novo;
   if (info.lista && info.lista !== minhaLista) adotarLista(info.lista); // quem entra passa a ver a mesma lista
   $("tituloMini").textContent = info.titulo || "Filme";
+  $("tituloTopo").textContent = info.titulo || "Filme";
   $("codigoMini").textContent = codigo;
   document.title = `${info.titulo || "Filme"} · Matinê`;
   cartaoCapa($("capaFolha"), info.capa);
@@ -948,6 +1018,34 @@ $("ajFechar").addEventListener("click", () => $("ajustes").classList.remove("sho
 $("ajustes").addEventListener("click", (e) => { if (e.target.id === "ajustes") $("ajustes").classList.remove("show"); });
 $("abrirAjustes").addEventListener("click", abrirAjustes);
 $("ajustesSala").addEventListener("click", abrirAjustes);
+
+// ---------- Sair da sala (voltar para a lista) ----------
+function perguntarSair() {
+  $("folha").classList.remove("show");
+  $("sairTexto").textContent = `O filme continua para quem ficar. Dá para voltar pelo código ${codigo} enquanto a sala existir.`;
+  $("sair").classList.add("show");
+}
+async function sairDaSala() {
+  $("sairConfirmar").disabled = true;
+  try {
+    video.pause();
+    await remove(r(`pessoas/${uid}`));
+    // Último a sair: marca a sala como vazia (é apagada 10 min depois, como quando fecha o app).
+    const resto = (await get(r("pessoas"))).val();
+    if (!resto) await set(ref(db, `vazias/${codigo}`), serverTimestamp()).catch(() => {});
+  } catch (e) { console.warn("Matinê: saída da sala", e); }
+  location.replace(location.pathname); // recarrega na lista; a conexão fecha e o resto é limpo sozinho
+}
+$("sairTopo").addEventListener("click", perguntarSair);
+$("sairFolha").addEventListener("click", perguntarSair);
+$("sairConfirmar").addEventListener("click", sairDaSala);
+$("sairFicar").addEventListener("click", () => $("sair").classList.remove("show"));
+$("sair").addEventListener("click", (e) => { if (e.target.id === "sair") $("sair").classList.remove("show"); });
+addEventListener("popstate", () => {
+  if (!$("sala").classList.contains("on")) return;
+  history.pushState({ sala: codigo }, ""); // continua na sala até confirmar
+  if ($("sair").classList.contains("show")) $("sair").classList.remove("show"); else perguntarSair();
+});
 
 // ---------- Folha: convidar e trocar filme ----------
 $("mini").addEventListener("click", () => { $("codigoFolha").textContent = codigo; $("trocaFilme").hidden = true; $("folha").classList.add("show"); });

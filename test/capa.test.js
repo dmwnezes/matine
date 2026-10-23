@@ -13,7 +13,7 @@ const json = { results: [
 test("lê a resposta do TMDB: filmes e séries com capa, ano do arquivo primeiro", () => {
   const r = lerResposta(json);
   assert.deepEqual(r.map((c) => c.pagina), ["https://www.themoviedb.org/movie/157336", "https://www.themoviedb.org/movie/99", "https://www.themoviedb.org/tv/1399"]);
-  assert.deepEqual(r[0], { titulo: "Interestelar", img: "https://image.tmdb.org/t/p/w500/abc.jpg", resumo: "Uma equipe…", pagina: "https://www.themoviedb.org/movie/157336" });
+  assert.deepEqual(r[0], { titulo: "Interestelar", img: "https://image.tmdb.org/t/p/w500/abc.jpg", resumo: "Uma equipe…", pagina: "https://www.themoviedb.org/movie/157336", ano: 2014 });
   assert.equal(r[2].titulo, "A Série");
   assert.equal(lerResposta(json, 1990)[0].pagina, "https://www.themoviedb.org/movie/99");
   assert.deepEqual(lerResposta({}), []);

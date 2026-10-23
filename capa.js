@@ -7,7 +7,7 @@ const API = "https://api.themoviedb.org/3";
 /** Ano no nome do arquivo ("Interstellar.2014.1080p.mkv" → 2014), para escolher o filme certo. */
 export const anoDoNome = (n) => Number((String(n || "").match(/(?:^|[\s._(\[-])((?:19|20)\d\d)(?=$|[\s._)\]-])/) || [])[1]) || 0;
 
-/** Resposta do /search/multi → candidatos { titulo, img, resumo, pagina }: só com capa, o do ano certo primeiro. */
+/** Resposta do /search/multi → candidatos { titulo, img, resumo, pagina, ano }: só com capa, o do ano certo primeiro. */
 export function lerResposta(json, ano = 0) {
   const lista = (json?.results || [])
     .filter((x) => (x.media_type === "movie" || x.media_type === "tv") && /^\/\w+\.(jpg|png)$/.test(x.poster_path || "") && Number.isInteger(x.id))
@@ -23,7 +23,7 @@ export function lerResposta(json, ano = 0) {
       };
     });
   if (ano) lista.sort((a, b) => (b.ano === ano) - (a.ano === ano));
-  return lista.map(({ ano: _, ...c }) => c);
+  return lista;
 }
 
 /** Busca no TMDB e devolve a lista de candidatos (vazia se não achou, sem chave ou sem internet). */

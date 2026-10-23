@@ -114,6 +114,32 @@
   .det-resumo { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; text-align: left; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
   .det-resumo:empty { display: none; }
 
+  /* Trocar capa: busca com grade de capas para escolher */
+  #capas { z-index: 32; }
+  #capas .box { max-height: 86vh; }
+  #capas input { max-width: none; }
+  .capas-grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; overflow-y: auto; min-height: 120px; }
+  .capas-grade button { border: 0; padding: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; border-radius: 12px; }
+  .capas-grade button.on .poster { box-shadow: 0 0 0 3px var(--accent); }
+  .capas-grade .poster { width: 100%; aspect-ratio: 2 / 3; }
+  .capas-grade b { display: block; margin-top: 5px; font-size: 11px; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .capas-grade small { color: var(--muted); font-size: 11px; }
+  .capas-grade .hint { grid-column: 1 / -1; text-align: center; padding: 20px 0; }
+  .sem-capa { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 10px 14px; border-radius: 16px; background: var(--card2); color: var(--muted); font-size: 13px; }
+  .sem-capa button { border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+  .det-capa { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 14px; }
+  .det-trocar { align-self: center; margin-top: -6px; }
+  /* Nome editável: tracejado embaixo para mostrar que dá para tocar e escrever */
+  .det-nome { max-width: none !important; text-align: center; font-size: 18px !important; font-weight: 600; background: transparent !important; border: 0 !important; border-bottom: 1.5px dashed var(--line) !important; border-radius: 0 !important; padding: 6px 10px !important; }
+  .det-nome:focus { border-bottom-color: var(--accent) !important; }
+  /* Topo do player: voltar para a lista (aparece junto com os controles) */
+  .topo-player { position: absolute; left: 0; right: 0; top: 0; z-index: 3; display: flex; align-items: center; gap: 6px; padding: calc(6px + env(safe-area-inset-top)) 8px 18px; background: linear-gradient(rgba(5,3,18,.8), transparent); opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .player.com-controles .topo-player { opacity: 1; pointer-events: auto; }
+  .topo-player button { width: 40px; height: 40px; flex: none; border: 0; border-radius: 50%; background: rgba(0,0,0,.25); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .topo-player svg { width: 22px; height: 22px; }
+  .topo-player span { color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  #sairFolha { width: 100%; }
+
   /* Sala */
   #sala { display: none; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; }
   #sala.on { display: flex; position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100dvh); }
@@ -471,6 +497,10 @@
     <div class="aviso-gesto" id="cAviso" aria-live="polite"></div>
     <div class="rodinha" aria-hidden="true"></div>
     <div class="na-tv-aviso" aria-live="polite"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5v2h8v-2h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 14H3V5h18v12Z"/></svg><span id="textoTv"></span><small>O celular virou controle: use os botões e os gestos aqui. Para parar, toque no botão da TV.</small></div>
+    <div class="topo-player">
+      <button id="sairTopo" type="button" aria-label="Sair da sala"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg></button>
+      <span id="tituloTopo"></span>
+    </div>
     <div class="barra-player" id="cBarraPlayer">
       <button id="cPlay" type="button" aria-label="Tocar"><svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg><svg class="i-pausa" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
       <input type="range" id="cBarra" min="0" max="1000" value="0" step="1" aria-label="Posição do filme">
@@ -527,6 +557,7 @@
       <button class="btn ghost" id="ajustesSala" type="button">Ajustes</button>
       <button class="btn ghost" id="fechar" type="button">Fechar</button>
     </div>
+    <button class="btn ghost aj-apagar" id="sairFolha" type="button">Sair da sala</button>
   </div>
 </div>
 
@@ -557,16 +588,32 @@
     <div class="acoes"><button class="btn ghost" id="novoGuardar" type="button">Guardar</button><button class="btn" id="novoAssistir" type="button">Assistir agora</button></div>
   </div>
 </div>
-<div id="detalhe" class="dialogo" role="dialog" aria-modal="true" aria-labelledby="detTitulo">
+<div id="detalhe" class="dialogo" role="dialog" aria-modal="true" aria-label="Detalhes do filme">
   <div class="box">
-    <div class="det-capa" id="detCapa"></div>
-    <h2 id="detTitulo"></h2>
+    <button type="button" class="det-capa" id="detCapa" aria-label="Trocar capa"></button>
+    <button type="button" class="link-ajustes det-trocar" id="detTrocarCapa">🖼 Trocar capa</button>
+    <input type="text" class="det-nome" id="detNome" maxlength="120" aria-label="Nome do filme (toque para editar)">
     <p class="det-info" id="detInfo"></p>
     <p class="det-resumo" id="detResumo"></p>
     <button class="btn" id="detAbrir" type="button">▶ Abrir sala</button>
     <button class="btn ghost" id="detVisto" type="button"></button>
     <button class="btn ghost aj-apagar" id="detRemover" type="button">Tirar da lista</button>
     <button class="link-ajustes" id="detFechar" type="button">Fechar</button>
+  </div>
+</div>
+<div id="sair" class="dialogo" role="dialog" aria-modal="true" aria-labelledby="sairTitulo">
+  <div class="box">
+    <h2 id="sairTitulo">Sair da sala?</h2>
+    <p class="hint" id="sairTexto"></p>
+    <div class="acoes"><button class="btn ghost" id="sairFicar" type="button">Ficar</button><button class="btn" id="sairConfirmar" type="button">Voltar para a lista</button></div>
+  </div>
+</div>
+<div id="capas" class="dialogo gaveta" role="dialog" aria-modal="true" aria-labelledby="capasTitulo">
+  <div class="box">
+    <h2 id="capasTitulo">Escolher capa</h2>
+    <input type="text" id="capaBusca" placeholder="Nome do filme ou série" aria-label="Buscar capa" autocomplete="off" enterkeyhint="search">
+    <div class="capas-grade" id="capasGrade" aria-live="polite"></div>
+    <div class="acoes"><button class="btn ghost" id="capaNenhuma" type="button">Sem capa</button><button class="btn ghost" id="capasFechar" type="button">Cancelar</button></div>
   </div>
 </div>
 <div id="toast" role="status"></div>
