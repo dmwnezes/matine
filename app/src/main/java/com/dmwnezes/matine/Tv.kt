@@ -65,8 +65,8 @@ class Tv(
     private val cliente: RemoteMediaClient? get() = sessao?.remoteMediaClient
 
     private val ouvinte = object : SessionManagerListener<CastSession> {
-        override fun onSessionStarted(s: CastSession, id: String) = carregar(s)
-        override fun onSessionResumed(s: CastSession, voltou: Boolean) = carregar(s)
+        override fun onSessionStarted(s: CastSession, id: String) = carregarSeguro(s)
+        override fun onSessionResumed(s: CastSession, voltou: Boolean) = carregarSeguro(s)
         override fun onSessionStartFailed(s: CastSession, erro: Int) = js("tvFalhou('Não consegui conectar na TV.')")
         override fun onSessionEnded(s: CastSession, erro: Int) { mandei = null; volumeTv = null; js("tvDesligou()") }
         override fun onSessionStarting(s: CastSession) {}
@@ -116,6 +116,11 @@ class Tv(
             show()
         }
     }
+
+    /** Chamado pelo Cast fora do nosso controle: um erro aqui viraria o app fechando. */
+    private fun carregarSeguro(s: CastSession) = runCatching { carregar(s) }.onFailure { e ->
+        js("tvFalhou(${org.json.JSONObject.quote("Erro na TV: $e")})")
+    }.let {}
 
     private fun carregar(s: CastSession) {
         val f = pendente ?: return

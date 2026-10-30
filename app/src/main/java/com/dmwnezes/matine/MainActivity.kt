@@ -2,6 +2,9 @@ package com.dmwnezes.matine
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.app.PictureInPictureParams
 import android.content.res.Configuration
 import android.content.Intent
@@ -25,6 +28,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import org.json.JSONObject
+import java.io.File
 
 /**
  * O app é o próprio site da Matinê numa janela: toda a sala (vídeo, sincronia, chat) vive no site.
@@ -54,6 +59,7 @@ class MainActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        guardarErros()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         web = WebView(this).apply {
@@ -78,6 +84,38 @@ class MainActivity : Activity() {
         if (savedInstanceState != null) web.restoreState(savedInstanceState)
         else web.loadUrl(enderecoDe(intent))
         atualizacao.conferir()
+        mostrarErroAnterior()
+    }
+
+    private val arquivoDeErro get() = File(filesDir, "ultimo-erro.txt")
+
+    /** Se o app fechar sozinho, guarda o motivo para mostrar na próxima vez que abrir. */
+    private fun guardarErros() {
+        val padrao = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            runCatching { arquivoDeErro.writeText("Matinê ${BuildConfig.VERSION_NAME}\n" + e.stackTraceToString().take(4000)) }
+            padrao?.uncaughtException(t, e)
+        }
+    }
+
+    private fun mostrarErroAnterior() {
+        val texto = runCatching { arquivoDeErro.readText() }.getOrNull() ?: return
+        arquivoDeErro.delete()
+        AlertDialog.Builder(this)
+            .setTitle("O app fechou da última vez")
+            .setMessage("Copie e mande isso para corrigir:\n\n" + texto.take(600))
+            .setPositiveButton("Copiar") { _, _ ->
+                (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("erro", texto))
+            }
+            .setNegativeButton("Fechar", null)
+            .show()
+    }
+
+    /** Erro da TV vira aviso na tela em vez de fechar o app. */
+    private fun naTv(acao: () -> Unit) = runOnUiThread {
+        runCatching(acao).onFailure { e ->
+            web.evaluateJavascript("window.tvFalhou(${JSONObject.quote("Erro na TV: $e")})", null)
+        }
     }
 
     override fun onResume() {
@@ -243,9 +281,9 @@ class MainActivity : Activity() {
         @JavascriptInterface fun podeTransmitir() = tv.disponivel
         @JavascriptInterface
         fun transmitir(url: String, titulo: String, capa: String, pos: Double, tocando: Boolean) =
-            runOnUiThread { tv.transmitir(url, titulo, capa, pos, tocando) }
-        @JavascriptInterface fun tvEstado(tocando: Boolean, pos: Double) = runOnUiThread { tv.estado(tocando, pos) }
-        @JavascriptInterface fun pararTv() = runOnUiThread { tv.parar() }
+            naTv { tv.transmitir(url, titulo, capa, pos, tocando) }
+        @JavascriptInterface fun tvEstado(tocando: Boolean, pos: Double) = naTv { tv.estado(tocando, pos) }
+        @JavascriptInterface fun pararTv() = naTv { tv.parar() }
 
         // ---- Gestos do player: brilho da tela e volume (da TV, se estiver transmitindo) ----
         @JavascriptInterface
