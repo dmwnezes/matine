@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { esperado, correcao, ehNovidade, emContagem, linkDoVideo, embedDoLink, novoCodigo, codigoValido, limparTitulo, lerHash, montarHash } from "../sync.js";
+import { esperado, correcao, emContagem, quemDecide, todosProntos, pastaDoDrive, proximoBloco, faixaPedida, motivoDoErro, linkDoVideo, embedDoLink, novoCodigo, codigoValido, limparTitulo, lerHash, montarHash } from "../sync.js";
 
 test("posição esperada anda com o relógio só quando está tocando", () => {
   assert.equal(esperado({ tocando: true, pos: 10, em: 1000 }, 4000), 13);
@@ -15,14 +15,6 @@ test("correção: pula longe, ajusta velocidade perto, nada quando igual", () =>
   assert.deepEqual(correcao(-0.8), { pular: false, velocidade: 1.1 });
   assert.deepEqual(correcao(0.2), { pular: false, velocidade: 0.95 });
   assert.deepEqual(correcao(0.03), { pular: false, velocidade: 1 });
-});
-
-test("obedecer a sala não volta como novidade (sem eco)", () => {
-  const s = { tocando: true, pos: 100, em: 0 };
-  assert.equal(ehNovidade(s, true, 102, 2000), false); // tocou porque a sala mandou
-  assert.equal(ehNovidade(s, false, 102, 2000), true); // pausei de verdade
-  assert.equal(ehNovidade(s, true, 300, 2000), true); // pulei de verdade
-  assert.equal(ehNovidade(null, true, 0, 0), true);
 });
 
 test("links de vídeo", () => {
@@ -85,4 +77,54 @@ test("links do YouTube e do Vimeo viram player embutido", () => {
   assert.deepEqual(embedDoLink("https://player.vimeo.com/video/76979871?h=8272103f6e"), { tipo: "vimeo", id: "76979871", h: "8272103f6e" });
   assert.deepEqual(embedDoLink("https://vimeo.com/channels/staffpicks/76979871"), { tipo: "vimeo", id: "76979871" });
   assert.equal(embedDoLink("https://site.com/f.mp4"), null);
+});
+
+test("convite cortado no meio de um % não derruba o site", () => {
+  assert.deepEqual(lerHash("#ABC234%"), { codigo: "ABC234%", chave: "", lista: "" });
+});
+
+test("quem decide é quem pediu; se saiu, o menor uid presente", () => {
+  assert.equal(quemDecide({ a: {}, b: {} }, "b"), "b");
+  assert.equal(quemDecide({ c: {}, a: {} }, "x"), "a");
+  assert.equal(quemDecide({}, "x"), null);
+});
+
+test("sala solta quando todos carregaram; quem saiu da aba ou deu erro não segura", () => {
+  assert.equal(todosProntos({ a: { pronto: "p" }, b: { pronto: "p" } }, "p"), true);
+  assert.equal(todosProntos({ a: { pronto: "p" }, b: { pronto: "velho" } }, "p"), false);
+  assert.equal(todosProntos({ a: { pronto: "p" }, b: { fora: true } }, "p"), true);
+  assert.equal(todosProntos({ a: { pronto: "p" }, b: { erro: "x" } }, "p"), true);
+});
+
+test("link de pasta do Drive", () => {
+  assert.equal(pastaDoDrive("https://drive.google.com/drive/folders/1AbCdEfGhIjKlMn?usp=sharing"), "1AbCdEfGhIjKlMn");
+  assert.equal(pastaDoDrive("https://drive.google.com/drive/u/0/folders/1AbCdEfGhIjKlMn"), "1AbCdEfGhIjKlMn");
+  assert.equal(pastaDoDrive("https://drive.google.com/file/d/1AbCdEfGhIjKlMn/view"), "");
+  assert.equal(pastaDoDrive("https://site.com/folders/1AbCdEfGhIjKlMn"), "");
+  assert.equal(pastaDoDrive("não é link"), "");
+});
+
+test("próximo bloco: segue do cursor e volta para o começo", () => {
+  assert.equal(proximoBloco(new Set(), 3, 5), 3);
+  assert.equal(proximoBloco(new Set([3, 4]), 3, 5), 0);
+  assert.equal(proximoBloco(new Set([0, 1, 2, 3, 4]), 2, 5), null);
+});
+
+test("faixa pedida pelo player", () => {
+  assert.deepEqual(faixaPedida("bytes=0-", 100, 10), { ini: 0, fim: 9 });
+  assert.deepEqual(faixaPedida("bytes=0-1", 100, 10), { ini: 0, fim: 1 });
+  assert.deepEqual(faixaPedida("bytes=95-", 100, 10), { ini: 95, fim: 99 });
+  assert.deepEqual(faixaPedida("bytes=-5", 100, 10), { ini: 95, fim: 99 });
+  assert.deepEqual(faixaPedida(null, 100, 10), { ini: 0, fim: 9 });
+  assert.equal(faixaPedida("bytes=100-", 100, 10), null);
+  assert.equal(faixaPedida("bytes=5-2", 100, 10), null);
+  assert.equal(faixaPedida("lixo", 100, 10), null);
+});
+
+test("motivo do erro do Drive", () => {
+  assert.match(motivoDoErro(403, "downloadQuotaExceeded"), /excesso de downloads/);
+  assert.match(motivoDoErro(403, "ipRefererBlocked"), /chave/);
+  assert.match(motivoDoErro(403, "userRateLimitExceeded"), /Muitos pedidos/);
+  assert.match(motivoDoErro(404), /não encontrado/);
+  assert.match(motivoDoErro(403), /Sem permissão/);
 });

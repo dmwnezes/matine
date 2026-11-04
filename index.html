@@ -416,6 +416,16 @@
   .capa small a { color: var(--accent); }
   .capa button { align-self: flex-start; border: 0; background: none; color: var(--accent); font: inherit; font-size: 12px; padding: 0; cursor: pointer; text-decoration: underline; }
   @media (prefers-reduced-motion: reduce) { .marquee i, .pulos i, .float { animation: none; } }
+  .diag { font-size: 13px; line-height: 1.5; color: var(--muted, #b8b2d6); background: rgba(255,255,255,.05); border-radius: 14px; padding: 10px 14px; margin: 10px 0; overflow-wrap: anywhere; }
+  .diag:empty { display: none; }
+  .quem .passar { border: 0; border-radius: 999px; background: rgba(255,255,255,.1); color: inherit; font: inherit; font-size: 11px; padding: 4px 8px; margin-top: 4px; cursor: pointer; }
+  .quem small { display: block; font-size: 11px; opacity: .7; }
+  .det-status { font-size: 13px; opacity: .85; margin: 6px 0; min-height: 1.2em; }
+  .det-status.ok { color: #5FB873; opacity: 1; }
+  .det-status.ruim { color: #E8836B; opacity: 1; }
+  .pasta { max-height: 40vh; overflow-y: auto; font-size: 14px; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; margin-bottom: 10px; }
+  .pasta label { display: flex; gap: 10px; align-items: flex-start; overflow-wrap: anywhere; }
+  .pasta input { flex: none; width: 18px; height: 18px; margin-top: 1px; accent-color: #9B8CFF; }
 </style>
 </head>
 <body>
@@ -539,6 +549,7 @@
     <div class="capa" id="capaFolha" hidden></div>
     <h2 id="folhaTitulo">Na sala</h2>
     <div class="quem" id="quem"></div>
+    <div class="diag" id="diag" aria-live="off"></div>
     <div class="codigo" id="codigoFolha"></div>
     <p class="hint">Quem tiver o link (ou o código) entra na sala.</p>
     <div class="acoes">
@@ -579,13 +590,14 @@
   <div class="box">
     <h2 id="novoTitulo">Guardar filme</h2>
   <div class="filme" id="campoFilme">
-    <input type="url" id="link" placeholder="Link do vídeo (.mp4, Drive, Dropbox…)" aria-label="Link do vídeo" inputmode="url" autocomplete="off">
+    <input type="url" id="link" placeholder="Link do vídeo ou pasta do Drive" aria-label="Link do vídeo" inputmode="url" autocomplete="off">
     <input type="text" id="titulo" placeholder="Nome do filme (opcional)" maxlength="80" aria-label="Nome do filme">
     <div class="capa" id="capaNova" hidden></div>
     <div class="campoDrive" id="campoDrive" hidden><input type="text" id="chaveDrive" placeholder="Chave do Google Drive (AIza…)" aria-label="Chave do Google Drive" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
   </div>
+    <div class="pasta" id="pasta" hidden></div>
     <p class="err" id="erroNovo" role="alert"></p>
-    <div class="acoes"><button class="btn ghost" id="novoGuardar" type="button">Guardar</button><button class="btn" id="novoAssistir" type="button">Assistir agora</button></div>
+    <div class="acoes"><button class="btn ghost" id="novoGuardar" type="button">Guardar</button><button class="btn" id="novoAssistir" type="button">Assistir agora</button><button class="btn" id="pastaGuardar" type="button" hidden>Guardar</button></div>
   </div>
 </div>
 <div id="detalhe" class="dialogo" role="dialog" aria-modal="true" aria-label="Detalhes do filme">
@@ -595,6 +607,7 @@
     <input type="text" class="det-nome" id="detNome" maxlength="120" aria-label="Nome do filme (toque para editar)">
     <p class="det-info" id="detInfo"></p>
     <p class="det-resumo" id="detResumo"></p>
+    <p class="det-status" id="detStatus" role="status"></p>
     <button class="btn" id="detAbrir" type="button">▶ Abrir sala</button>
     <button class="btn ghost" id="detVisto" type="button"></button>
     <button class="btn ghost aj-apagar" id="detRemover" type="button">Tirar da lista</button>

@@ -1,7 +1,7 @@
 // Controles próprios do player, iguais em todo aparelho, com gestos:
 // toque mostra/esconde · toque duplo nos lados volta/avança 10 s (cada toque a mais soma 10) ·
 // toque duplo no meio dá play/pausa · deslizar na esquerda muda o brilho, na direita o volume.
-// Play, pausa e pulos passam pelo próprio <video>, então a sala sincroniza sozinha (app.js).
+// Play, pausa e pulos são pedidos à sala (`sala.alternar`, `sala.pular`); o <video> só obedece a sala (app.js).
 
 /** Lado da tela tocado: esquerda, meio ou direita (em terços). */
 export const ladoDoToque = (x, largura) => (x < largura / 3 ? "esq" : x > (largura * 2) / 3 ? "dir" : "meio");
@@ -15,7 +15,7 @@ export function tempo(s) {
 
 const limitar = (v, min, max) => Math.min(max, Math.max(min, v));
 
-export function iniciarControles(video, player) {
+export function iniciarControles(video, player, sala) {
   const $ = (id) => document.getElementById(id);
   const app = window.Matine; // app Android: brilho e volume do próprio celular
   const ehIphone = /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -43,15 +43,15 @@ export function iniciarControles(video, player) {
   };
   video.addEventListener("play", atualizarPlay);
   video.addEventListener("pause", atualizarPlay);
-  const alternar = () => (video.paused ? video.play().catch(() => {}) : video.pause());
+  const alternar = () => sala.alternar();
   $("cPlay").addEventListener("click", () => { alternar(); mostrar(); });
 
-  let arrastandoBarra = false;
+  let arrastandoBarra = false, alvoPulo = null, puloTimer = 0, pulo = 0;
   const barra = $("cBarra");
   function atualizarBarra() {
     const d = video.duration;
     if (!arrastandoBarra && isFinite(d) && d > 0) barra.value = Math.round((video.currentTime / d) * 1000);
-    $("cTempo").textContent = `${tempo(arrastandoBarra ? (barra.value / 1000) * d : video.currentTime)} / ${isFinite(d) ? tempo(d) : "--:--"}`;
+    $("cTempo").textContent = `${tempo(arrastandoBarra ? (barra.value / 1000) * d : alvoPulo ?? video.currentTime)} / ${isFinite(d) ? tempo(d) : "--:--"}`;
     barra.style.setProperty("--p", `${barra.value / 10}%`);
   }
   video.addEventListener("timeupdate", atualizarBarra);
@@ -59,7 +59,7 @@ export function iniciarControles(video, player) {
   barra.addEventListener("input", () => { arrastandoBarra = true; atualizarBarra(); mostrar(); });
   barra.addEventListener("change", () => {
     arrastandoBarra = false;
-    if (isFinite(video.duration)) video.currentTime = (barra.value / 1000) * video.duration;
+    if (isFinite(video.duration)) sala.pular((barra.value / 1000) * video.duration);
   });
 
   // Carregando: rodinha no meio
@@ -91,7 +91,16 @@ export function iniciarControles(video, player) {
 
   // ---------- Gestos ----------
   const area = $("cGestos");
-  let toque = null, ultimo = { t: 0, lado: "" }, umToqueTimer = 0, pulo = 0;
+  let toque = null, ultimo = { t: 0, lado: "" }, umToqueTimer = 0;
+  // Vários pulos seguidos viram um só: a sala (e o Drive) só ficam sabendo do ponto final.
+  function somarPulo(passo) {
+    if (!isFinite(video.duration)) return;
+    alvoPulo = limitar((alvoPulo ?? video.currentTime) + passo, 0, video.duration - 0.5);
+    pulo += Math.abs(passo);
+    atualizarBarra();
+    clearTimeout(puloTimer);
+    puloTimer = setTimeout(() => { sala.pular(alvoPulo); alvoPulo = null; pulo = 0; }, 650);
+  }
   area.addEventListener("pointerdown", (e) => {
     toque = { x: e.clientX, y: e.clientY, modo: "", inicio: 0 };
     area.setPointerCapture?.(e.pointerId);
@@ -131,14 +140,10 @@ export function iniciarControles(video, player) {
     clearTimeout(umToqueTimer);
     if (duplo || emSequencia) {
       if (lado === "meio") { alternar(); avisar(video.paused ? "▶" : "❚❚"); return; }
-      pulo += 10;
-      const passo = lado === "esq" ? -10 : 10;
-      if (isFinite(video.duration)) video.currentTime = limitar(video.currentTime + passo, 0, video.duration - 0.5);
+      somarPulo(lado === "esq" ? -10 : 10);
       avisar(`${lado === "esq" ? "«" : "»"} ${pulo} s`, lado);
-      umToqueTimer = setTimeout(() => { pulo = 0; }, 650);
       return;
     }
-    pulo = 0;
     umToqueTimer = setTimeout(() => {
       if (player.classList.contains("com-controles") && !video.paused) { clearTimeout(esconderTimer); player.classList.remove("com-controles"); }
       else mostrar();
@@ -149,8 +154,8 @@ export function iniciarControles(video, player) {
   document.addEventListener("keydown", (e) => {
     if (e.target.closest("input, textarea") || !document.getElementById("sala").classList.contains("on")) return;
     if (e.key === " " || e.key === "k") { e.preventDefault(); alternar(); mostrar(); }
-    else if (e.key === "ArrowLeft") { video.currentTime = Math.max(0, video.currentTime - 10); avisar("« 10 s", "esq"); }
-    else if (e.key === "ArrowRight") { video.currentTime += 10; avisar("» 10 s", "dir"); }
+    else if (e.key === "ArrowLeft") { somarPulo(-10); avisar(`« ${pulo} s`, "esq"); }
+    else if (e.key === "ArrowRight") { somarPulo(10); avisar(`» ${pulo} s`, "dir"); }
     else if (e.key === "f") $("cTela").click();
   });
 

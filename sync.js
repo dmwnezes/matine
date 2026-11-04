@@ -25,16 +25,6 @@ export function correcao(diff) {
 }
 
 /**
- * Um evento do vídeo daqui (play, pause, pulo) é novidade para a sala?
- * Se o vídeo só está obedecendo a sala, não manda nada — é isso que evita o eco.
- */
-export function ehNovidade(estado, tocando, pos, agora) {
-  if (!estado) return true;
-  if (estado.tocando !== tocando) return true;
-  return Math.abs(pos - esperado(estado, agora)) > 1.5;
-}
-
-/**
  * Transforma o link colado num endereço que o <video> consegue tocar.
  * Devolve { url } ou { erro }.
  */
@@ -105,7 +95,9 @@ export const chaveValida = (k) => /^AIza[0-9A-Za-z_-]{35}$/.test(k || "");
  * (como na Estante, que levava o banco no link). A chave não é segredo: só funciona no dmwnezes.com.
  */
 export function lerHash(hash) {
-  const h = decodeURIComponent(String(hash).replace(/^#/, "")).trim();
+  let h = String(hash).replace(/^#/, "");
+  try { h = decodeURIComponent(h); } catch {} // convite cortado no meio de um "%": não derruba o site
+  h = h.trim();
   // Link da lista compartilhada: #lista=CODIGO16
   if (h.startsWith("lista=")) { const l = h.slice(6); return { codigo: "", chave: "", lista: /^[A-Za-z0-9]{16}$/.test(l) ? l : "" }; }
   const [c = "", k = ""] = h.split("~");
@@ -119,4 +111,53 @@ export function limparTitulo(nome) {
   t = t.replace(/[\[(].*$/, ""); // "(2014)", "[YTS]"...
   t = t.split(/\s(?:19\d\d|20\d\d|480p|720p|1080p|2160p|4k|bluray|blu-ray|brrip|web-?dl|webrip|hdrip|dvdrip|x264|x265|h264|h265|hevc|dual|dublado|legendado|nacional)\b/i)[0];
   return t.replace(/\s+/g, " ").trim();
+}
+
+/** Quem escreve o "já" quando a sala está se preparando: quem pediu, ou (se saiu) o menor uid presente. */
+export function quemDecide(pessoas, por) {
+  if (pessoas?.[por]) return por;
+  return Object.keys(pessoas || {}).sort()[0] || null;
+}
+
+/** Todos que estão assistindo já carregaram o ponto `prep`? Quem saiu da aba ou está com erro não segura a sala. */
+export const todosProntos = (pessoas, prep) =>
+  Object.values(pessoas || {}).every((p) => p.fora || p.erro || p.pronto === prep);
+
+/** Link de pasta do Drive → id da pasta (ou ""). */
+export function pastaDoDrive(texto) {
+  try {
+    const u = new URL(String(texto).trim());
+    if (u.hostname.replace(/^www\./, "") !== "drive.google.com") return "";
+    return u.pathname.match(/\/folders\/([\w-]{10,})/)?.[1] || "";
+  } catch { return ""; }
+}
+
+/** Próximo bloco que falta baixar: o primeiro a partir de `cursor`; no fim, volta para o começo. */
+export function proximoBloco(tem, cursor, total) {
+  for (let i = 0; i < total; i++) { const k = (cursor + i) % total; if (!tem.has(k)) return k; }
+  return null;
+}
+
+/**
+ * Cabeçalho Range → { ini, fim } dentro do arquivo, entregando no máximo `max` bytes (resposta menor que o pedido
+ * é válida em HTTP: o <video> pede o resto depois). Devolve null se a faixa não existe.
+ */
+export function faixaPedida(range, total, max) {
+  const m = /^bytes=(\d*)-(\d*)$/.exec(String(range || "bytes=0-").trim());
+  if (!m || (!m[1] && !m[2])) return null;
+  const ini = m[1] ? Number(m[1]) : Math.max(0, total - Number(m[2]));
+  const pedido = m[1] && m[2] ? Number(m[2]) : total - 1;
+  if (ini >= total || pedido < ini) return null;
+  return { ini, fim: Math.min(pedido, total - 1, ini + max - 1) };
+}
+
+/** O que o Drive respondeu → frase para a tela. `motivo` é o campo reason do erro da API. */
+export function motivoDoErro(status, motivo = "") {
+  if (/QuotaExceeded|sharingRateLimit/i.test(motivo)) return "O Google bloqueou este arquivo por excesso de downloads. Costuma voltar em até 24 h. Para ver antes, faça uma cópia do arquivo no Drive e use o link da cópia.";
+  if (/rateLimit|dailyLimit/i.test(motivo) || status === 429) return "Muitos pedidos ao Drive neste minuto. Espere um pouco e tente de novo.";
+  if (/ipRefererBlocked|keyInvalid|keyExpired|API_KEY/i.test(motivo) || status === 400) return "A chave do Google Drive recusou este site. Confira a chave no Google Cloud.";
+  if (status === 404 || motivo === "notFound") return "Arquivo não encontrado. Ele foi apagado ou não está como \"qualquer pessoa com o link\".";
+  if (status === 401 || status === 403) return "Sem permissão para abrir. Compartilhe o arquivo como \"qualquer pessoa com o link\".";
+  if (status >= 500) return "O servidor do vídeo está com problema agora. Tente de novo em instantes.";
+  return `O servidor do vídeo recusou o pedido (erro ${status}).`;
 }

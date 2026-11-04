@@ -11,25 +11,31 @@ Cada pessoa carrega o vídeo direto do link. A sala só guarda **o estado** — 
 
 - se estiver a mais de 1,5 s de diferença, pula para o ponto certo;
 - se estiver perto, acelera ou freia de leve (até 10%) até encostar, sem tranco;
-- só avisa a sala quando a pessoa faz algo de verdade (play, pause, pulo). Quando o vídeo está só obedecendo a sala, nada volta — é isso que evita o "eco" de comandos.
+- quem manda na sala são os comandos da pessoa (botões, gestos, controle da TV). Os eventos do vídeo não viram comando, a não ser que venham de uma tela do sistema (janelinha, tela cheia do iPhone). Assim um vídeo atrasado (aba trocada, tela bloqueada, travada) nunca arrasta os outros.
 
-Quando a sala está pausada e alguém dá play, todo mundo vê uma contagem 3, 2, 1 e o filme começa no mesmo instante para todos.
+**Play e pulos esperam todo mundo:** quando alguém dá play ou pula, todos vão para o ponto e carregam. Só quando todos estão prontos (ou depois de 20 s) vem a contagem e o filme começa no mesmo instante. Quem saiu da aba ou está com erro não segura a sala.
+
+**Espera eu:** quem travar por mais de 2,5 s com o filme andando faz a sala voltar ao ponto dele e esperar (no máximo 30 s, e no máximo uma vez a cada 40 s).
+
+**Cofre (só links do Google Drive):** cada aparelho baixa o filme do Drive numa única conexão, do ponto atual até o fim, e guarda em blocos de 2 MB (`cofre.js`). O vídeo lê desses blocos (`sw.js`), então pular para um trecho já guardado não faz nenhum pedido ao Drive; pular para um trecho novo faz a conexão ir até lá. O Google não publica como conta o limite de downloads; a ideia é chamar o Drive o mínimo possível, mas o limite continua existindo: um arquivo já bloqueado só toca o que este aparelho já guardou. Ficam guardados o filme atual e os 2 últimos; "Apagar meus dados" apaga tudo. O filme inteiro é baixado mesmo que se assista só um pedaço, o que conta em dados móveis. Sem suporte ou sem espaço, o vídeo toca direto do link. O diagnóstico aparece tocando na faixa de pessoas.
 
 Ao guardar um filme, a Matinê busca o nome, a capa e a sinopse em português no TMDB (themoviedb.org, o mesmo da Estante), pelo nome digitado ou pelo nome do arquivo; o ano no nome do arquivo ajuda a escolher o filme certo. Sem nome digitado, o filme fica com o nome do TMDB. Precisa da chave grátis do TMDB em `chaveTmdb`, no `config.js`. Se vier o filme errado, toque em "Não é esse filme" para ver o próximo resultado. A capa aparece no convite, na sala e no vídeo antes do play. O link mandado no WhatsApp/Instagram mostra o cartão da Matinê (a capa de cada filme não aparece ali porque o site é estático, sem servidor).
 
-**Lista "Para ver depois":** a tela inicial é uma lista compartilhada de filmes. O **+** abre uma gaveta: cole o link (o mesmo tipo de link de sempre), veja a capa e toque em **Guardar** ou **Assistir agora**. O filme mais antigo ainda não visto vira a **Próxima sessão**, com o botão **Abrir sala**; os outros ficam na fileira de baixo. A aba **Já vimos** guarda o histórico: o filme vai para lá sozinho quando a sala passa de 92% dele (filmes com mais de 10 min), ou pelo botão **Já vimos** nos detalhes. Quem entra numa sala aberta pela lista passa a ver e adicionar na mesma lista (o que essa pessoa tinha numa lista própria vai junto); o botão **Compartilhar a lista** manda um link direto para ela. A lista fica no banco em `listas/<código>`; o código tem 16 letras e números e só quem o recebe consegue ler a lista.
+**Lista "Para ver depois":** a tela inicial é uma lista compartilhada de filmes. O **+** abre uma gaveta: cole o link (o mesmo tipo de link de sempre), veja a capa e toque em **Guardar** ou **Assistir agora**. Colando o link de uma pasta do Drive (como "qualquer pessoa com o link"), dá para marcar e guardar vários vídeos de uma vez; subpastas não entram. Os detalhes de cada filme testam se o link está abrindo agora e dizem o motivo se não estiver. O filme mais antigo ainda não visto vira a **Próxima sessão**, com o botão **Abrir sala**; os outros ficam na fileira de baixo. A sala guarda onde o filme parou a cada 15 s, e abrir o filme de novo pela lista continua dali. A aba **Já vimos** guarda o histórico: o filme vai para lá sozinho quando a sala passa de 92% dele (filmes com mais de 10 min), ou pelo botão **Já vimos** nos detalhes. Quem entra numa sala aberta pela lista passa a ver e adicionar na mesma lista (o que essa pessoa tinha numa lista própria vai junto); o botão **Compartilhar a lista** manda um link direto para ela. A lista fica no banco em `listas/<código>`; o código tem 16 letras e números e só quem o recebe consegue ler a lista.
 
 **Player:** toque mostra/esconde os controles; toque duplo nos lados volta/avança 10 s (cada toque a mais soma 10); toque duplo no meio dá play/pausa; deslizar na esquerda muda o brilho e na direita o volume. No computador: espaço, setas e F.
 
 **TV:** o botão de TV manda o filme para o Chromecast/Google TV (app Android e Chrome) ou Apple TV (AirPlay no iPhone). No app, o celular fica mudo e vira controle: botões e gestos mexem na sala e a TV acompanha; play/pausa feitos pelo controle da TV também valem para a sala. Só vai para a TV o arquivo original (MP4/WebM/HLS); vídeo convertido na hora não vai, e link do Drive só vai se a chave do Drive não estiver restrita a sites.
 
-**Sala que se apaga:** quando a última pessoa sai, a sala é marcada como vazia; 10 min depois ela é apagada (com chat e tudo) por quem abrir a Matinê. Voltar antes disso (ex.: recarregar a página) mantém a sala.
+**Sala que se apaga:** quando a última pessoa sai, a sala é marcada como vazia; 10 min depois ela é apagada (com chat e tudo) quando alguém que passou por ela abrir a Matinê de novo. Voltar antes disso (ex.: recarregar a página) mantém a sala, parada no último ponto visto.
+
+**Comando da sala:** quem abriu a sala troca o filme e pode passar o comando a outra pessoa, tocando na faixa de pessoas. Se quem comandava sair, qualquer um dos presentes pode trocar o filme.
 
 **Fotos no chat:** o botão de imagem ao lado do campo de mensagem manda uma foto, reduzida no próprio aparelho (até ~200 KB) e guardada na sala, que é apagada junto com ela. Tocar na foto abre em tela cheia.
 
 **Comandos secretos:** `/brotos` e `/tchau`, `/carta texto`, `/pipoca`, `/confete`, `/dado`, `/moeda` e `/luz` aparecem na tela de todos da sala. Dado e moeda dão o mesmo resultado para todos.
 
-**Atualização:** o app Android confere as Releases do GitHub ao abrir (no máximo a cada 6 h), pergunta, baixa e abre o instalador.
+**Atualização:** o app Android (Android 9 ou mais novo) confere as Releases do GitHub ao abrir (no máximo a cada 6 h), pergunta, baixa e abre o instalador.
 
 Bloquear a tela ou trocar de app no celular não pausa a sala; ao voltar, o vídeo alcança os outros sozinho.
 
@@ -67,10 +73,11 @@ O APK é gerado sozinho pelo GitHub Actions a cada mudança na pasta `app/` e ap
 2. **Criação > Authentication > Começar > Método de login > Anônimo > Ativar**. (Cada aparelho entra com um usuário anônimo; ninguém precisa de conta.)
 3. **Criação > Realtime Database > Criar banco de dados** > local **Estados Unidos** > **modo bloqueado**.
 4. Na aba **Regras**, apague tudo, cole o conteúdo do arquivo [`database.rules.json`](database.rules.json) e toque em **Publicar**.
-5. Em **Configurações do projeto** (engrenagem) > **Seus apps** > ícone **`</>`** (Web) > apelido **matine** > **Registrar app**. Copie os valores do `firebaseConfig` que aparecem para o arquivo [`config.js`](config.js), **menos a `apiKey`**, e envie para o GitHub.
-6. Abra o site uma vez e cole a `apiKey` quando ele pedir. Ela fica guardada no aparelho e vai junto em todo convite (`#CODIGO~CHAVE`), então quem entra por convite não digita nada. Assim a chave nunca fica no repositório e o GitHub não acusa chave exposta.
+5. Em **Configurações do projeto** (engrenagem) > **Seus apps** > ícone **`</>`** (Web) > apelido **matine** > **Registrar app**. Copie os valores do `firebaseConfig` que aparecem para o arquivo [`config.js`](config.js), com a `apiKey` em `chaveFirebase`, e envie para o GitHub. A chave deve estar restrita a `https://dmwnezes.com/*` no Google Cloud.
 
-Esses valores não são segredo (todo site com Firebase mostra os seus). Quem protege as salas são as regras: só entra quem tem o código da sala, ninguém consegue listar as salas, só o dono troca o filme e cada um só escreve o próprio nome e as próprias mensagens.
+Esses valores não são segredo (todo site com Firebase mostra os seus). Quem protege as salas são as regras: só entra quem tem o código da sala, ninguém consegue listar as salas, só quem comanda troca o filme (ou qualquer um, se quem comandava saiu) e cada um só escreve o próprio nome e as próprias mensagens.
+
+**Sempre que `database.rules.json` mudar**, cole o arquivo de novo na aba **Regras** e publique: o banco não lê o arquivo do repositório.
 
 ### 3. Pronto
 
@@ -83,11 +90,19 @@ Abra o site, escreva seu nome, cole o link de um vídeo e toque em **Abrir sala*
 3. Edite a chave: em **Restrições de aplicativo**, escolha **Sites** e adicione `https://dmwnezes.com/*`; em **Restrições de API**, escolha só **Google Drive API**. Salve.
 4. Na primeira vez que você abrir uma sala com link do Drive, o site pede essa chave (só uma vez). Ela fica no aparelho e vai junto na sala para os convidados.
 
+### 5. Assinatura do APK
+
+O GitHub Actions assina o APK com a chave guardada nos Secrets do repositório (**Settings > Secrets and variables > Actions**): `APK_KEYSTORE_B64` (o arquivo da chave em base64) e `APK_KEYSTORE_PASSWORD`. Sem eles, a geração do APK falha. O GitHub não mostra um Secret depois de salvo, então guarde a chave num lugar seguro: sem ela, uma nova versão do app só instala apagando a anterior.
+
+`app/signing/lineage.bin` não é segredo: é a prova de que a chave atual substituiu a antiga, e é o que deixa o app atualizar sem reinstalar.
+
 ## Testar no computador
 
 ```bash
-npm test                 # lógica da sincronia (sync.js)
-./gradlew assembleRelease   # APK (precisa do Android SDK)
+npm test                 # lógica pura (sync.js, lista, capa...)
+npm i --no-save playwright firebase@10.14.1 mediabunny@1.62.0 firebase-tools@15
+npm run test:e2e         # dois aparelhos numa sala, com Drive falso (precisa de Java e ffmpeg)
+./gradlew assembleDebug  # APK de teste (precisa do Android SDK)
 ```
 
 Abrindo o site em `localhost`, ele usa o emulador do Firebase (`firebase emulators:start --only database,auth`) em vez do banco de verdade.
@@ -97,8 +112,15 @@ Abrindo o site em `localhost`, ele usa o emulador do Firebase (`firebase emulato
 | Arquivo | O que é |
 | --- | --- |
 | `index.html` | Telas e visual (paleta "Noite suave", a mesma da Estante e do Palavreiro) |
-| `app.js` | Sala: Firebase, player, chat, reações, convite |
+| `app.js` | Sala: Firebase, sincronia, chat, reações, convite, lista |
 | `sync.js` | Contas da sincronia e leitura dos links (testado em `test/`) |
+| `cofre.js` | Baixa o filme do Drive uma vez só e guarda no aparelho |
+| `sw.js` | Service worker: entrega ao vídeo o que o cofre guardou |
+| `drive.js` | Dados do arquivo, teste do link e pastas do Drive |
+| `controles.js` | Botões e gestos do player |
+| `lista.js` | Organiza a lista "Para ver depois" |
+| `fotos.js` | Reduz as fotos do chat |
+| `efeitos.js`, `brotos.js` | Comandos secretos do chat |
 | `capa.js` | Nome, capa e sinopse do filme pelo TMDB (chave `chaveTmdb` no `config.js`) |
 | `video.js` | Abre o vídeo: direto quando o aparelho toca, ou convertendo em tempo real ([Mediabunny](https://mediabunny.dev)) |
 | `embed.js` | YouTube e Vimeo embutidos, fingindo ser o `<video>` para a sincronia e os controles |
@@ -106,3 +128,4 @@ Abrindo o site em `localhost`, ele usa o emulador do Firebase (`firebase emulato
 | `database.rules.json` | Regras de segurança do banco |
 | `avatars.js` | Fotos de perfil (as mesmas da Estante) |
 | `app/` | App Android (WebView que abre o site) |
+| `test/e2e/` | Teste com dois aparelhos, emulador do Firebase e Drive falso |

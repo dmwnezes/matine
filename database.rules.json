@@ -5,12 +5,16 @@
         ".read": "auth != null",
         ".write": "auth != null && !newData.exists() && !data.child('pessoas').exists() && root.child('vazias/' + $sala).isNumber() && root.child('vazias/' + $sala).val() < now - 600000",
         "info": {
-          ".write": "auth != null && (!data.exists() || data.child('dono').val() === auth.uid)",
-          ".validate": "newData.child('dono').val() === auth.uid && newData.child('link').isString() && newData.child('link').val().length <= 2000"
+          ".write": "auth != null && (!data.exists() || data.child('dono').val() === auth.uid || !root.child('salas/' + $sala + '/pessoas/' + data.child('dono').val()).exists())",
+          ".validate": "newData.hasChild('dono') && (newData.child('dono').val() === auth.uid || root.child('salas/' + $sala + '/pessoas/' + newData.child('dono').val()).exists()) && newData.child('link').isString() && newData.child('link').val().length <= 2000"
         },
         "estado": {
           ".write": "auth != null && root.child('salas/' + $sala + '/info').exists()",
-          ".validate": "newData.hasChildren(['tocando', 'pos', 'em', 'por']) && newData.child('tocando').isBoolean() && newData.child('pos').isNumber() && newData.child('por').val() === auth.uid"
+          ".validate": "newData.hasChildren(['tocando', 'pos', 'em', 'por']) && newData.child('tocando').isBoolean() && newData.child('pos').isNumber() && newData.child('pos').val() >= 0 && newData.child('em').isNumber() && newData.child('em').val() <= now + 15000 && newData.child('por').val() === auth.uid"
+        },
+        "ponto": {
+          ".write": "auth != null && root.child('salas/' + $sala + '/info').exists()",
+          ".validate": "newData.hasChildren(['pos', 'em']) && newData.child('pos').isNumber() && newData.child('em').isNumber()"
         },
         "pessoas": {
           "$uid": {
@@ -50,11 +54,10 @@
       }
     },
     "vazias": {
-      ".read": "auth != null",
-      ".indexOn": ".value",
       "$sala": {
+        ".read": "auth != null",
         ".write": "auth != null",
-        ".validate": "newData.isNumber()"
+        ".validate": "newData.isNumber() && newData.val() >= now - 60000"
       }
     }
   }
