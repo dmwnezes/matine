@@ -1185,6 +1185,7 @@ function abrirAjustes() {
     `<button type="button" data-c="${c}" style="background:${c}" aria-label="Cor ${i + 1}" aria-pressed="${c === corBalao}" class="${c === corBalao ? "on" : ""}"></button>`).join("");
   document.querySelectorAll("#ajLetra button").forEach((b) => b.classList.toggle("on", b.dataset.l === document.body.dataset.letra));
   $("ajVibrar").checked = guardado("matine-vibrar") !== "nao";
+  $("ajAtualizar").hidden = !window.Matine?.verificarAtualizacao; // só o app Android tem como atualizar
   $("ajApagar").textContent = "Apagar meus dados deste aparelho";
   $("ajApagar").dataset.confirma = "";
   $("folha").classList.remove("show");
@@ -1215,6 +1216,7 @@ $("ajNome").addEventListener("change", () => {
 });
 /** Na sala, troca o nome e a foto para todo mundo. */
 function atualizarPerfil() { if (uid && codigo && $("sala").classList.contains("on")) update(r(`pessoas/${uid}`), { nome: meuNome, foto: minhaFoto }).catch(() => {}); }
+$("ajAtualizar").addEventListener("click", () => window.Matine?.verificarAtualizacao?.());
 $("ajApagar").addEventListener("click", () => {
   const b = $("ajApagar");
   if (!b.dataset.confirma) { b.dataset.confirma = "1"; b.textContent = "Toque de novo para apagar tudo"; return; }

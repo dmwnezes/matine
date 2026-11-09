@@ -36,10 +36,27 @@ class Atualizacao(private val activity: Activity) {
         val agora = System.currentTimeMillis()
         if (agora - prefs.getLong("ultima", 0) < 6 * 3600_000L) return
         prefs.edit().putLong("ultima", agora).apply()
+        checar(manual = false)
+    }
+
+    /** Botão "Verificar atualizações": confere agora, sem esperar as 6 h, e avisa o resultado. */
+    fun verificar() = checar(manual = true)
+
+    private fun checar(manual: Boolean) {
         Thread {
-            val v = runCatching { ultima() }.getOrNull() ?: return@Thread
-            if (v.numero > BuildConfig.VERSION_CODE) activity.runOnUiThread { perguntar(v) }
+            val v = runCatching { ultima() }.getOrNull()
+            activity.runOnUiThread {
+                when {
+                    v == null -> if (manual) aviso("Não consegui conferir agora. Veja sua internet e tente de novo.")
+                    v.numero > BuildConfig.VERSION_CODE -> perguntar(v)
+                    manual -> aviso("Você já está na versão mais nova (${BuildConfig.VERSION_NAME}).")
+                }
+            }
         }.start()
+    }
+
+    private fun aviso(texto: String) {
+        if (!activity.isFinishing) AlertDialog.Builder(activity).setMessage(texto).setPositiveButton("OK", null).show()
     }
 
     private fun ultima(): Versao {

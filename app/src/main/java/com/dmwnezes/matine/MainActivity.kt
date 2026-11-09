@@ -285,6 +285,9 @@ class MainActivity : Activity() {
         @JavascriptInterface fun tvEstado(tocando: Boolean, pos: Double) = naTv { tv.estado(tocando, pos) }
         @JavascriptInterface fun pararTv() = naTv { tv.parar() }
 
+        // ---- Atualização ----
+        @JavascriptInterface fun verificarAtualizacao() = runOnUiThread { atualizacao.verificar() }
+
         // ---- Gestos do player: brilho da tela e volume (da TV, se estiver transmitindo) ----
         @JavascriptInterface
         fun brilhoAtual(): Float = window.attributes.screenBrightness.takeIf { it >= 0 }
